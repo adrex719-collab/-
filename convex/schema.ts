@@ -6,6 +6,11 @@ export default defineSchema({
   ...authTables,
   permits: defineTable({
     permitId: v.string(),
+    organizationId: v.optional(v.string()),
+    regionId: v.optional(v.string()),
+    branchId: v.optional(v.string()),
+    siteId: v.optional(v.string()),
+    unitId: v.optional(v.string()),
     type: v.union(v.literal("COLD_WORK"), v.literal("HOT_WORK"), v.literal("CONFINED_SPACE"), v.literal("EXCAVATION")),
     location: v.string(),
     status: v.union(
