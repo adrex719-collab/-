@@ -22,5 +22,5 @@ export default defineSchema({
     lotoReleased: v.boolean(), requiredGasTest: v.boolean(), gasTestPassed: v.boolean(),
     dataClass: v.union(v.literal("TEST/SEED"), v.literal("OPERATIONAL")),
     createdAt: v.number(), updatedAt: v.number(),
-  }).index("by_permit_id", ["permitId"]).index("by_status", ["status"]),
+  }).index("by_permit_id", ["permitId"]).index("by_status", ["status"]).index("by_branch_status", ["branchId", "status"]),
 })
