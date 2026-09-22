@@ -1,29 +1,39 @@
 # D08 PTW — Next Gate
 
-## Closed implementation controls
+## Current closed controls
 
-1. C03 server identity/role/scope resolution — PASS
-   - Convex resolves the authenticated user server-side with Convex Auth.
-   - userProfiles is the single role/scope profile boundary.
+1. **C03 server identity/role/scope boundary — IMPLEMENTED**
+   - Convex Auth is now configured for the application.
+   - PTW server functions resolve the authenticated actor with Convex Auth.
+   - userProfiles remains the single role/scope profile boundary.
    - Branch access is denied unless the authenticated profile contains the branch or has explicit CENTRAL_HSE aggregate scope.
-   - PTW scoped APIs enforce permission by transition.
-   - Executable Convex tests cover unauthenticated access, cross-branch denial, authorized branch read, and PTW creation.
+   - PTW scoped APIs enforce permissions by transition.
+   - Client-supplied branchId is treated as a routing/scope key and is checked against the server-resolved profile.
 
-2. Historical dry-run/reconciliation implementation — PASS
+2. **Historical dry-run/reconciliation implementation — PASS**
    - runtime/historical/importer.ts implements deterministic source keys, HISTORICAL classification, validation, person matching exceptions, duplicate review, reconciliation, and import approval blocking unresolved exceptions.
    - Regression coverage is included under TESTS/historical/.
 
-3. GitHub PTW Runtime Gate — PASS
-   - Latest verified commit d3c5bf6a9278055f2d7b416df2b94bcb9126b9a7.
-   - PTW Runtime Gate and Pages deployment checks passed.
+3. **PTW UI integration — IMPLEMENTED**
+   - The real Macaly dashboard is wired to listScoped, createScoped, and updateStateScoped.
+   - The dashboard is protected by an authentication gate.
+   - The Persian RTL UX patterns are represented in Figma and applied to the Macaly runtime.
 
-## Remaining control
+## Remaining gates
 
-4. UI → Convex → authorization/scope end-to-end — OPEN
-   - Dashboard is wired to listScoped, createScoped, and updateStateScoped.
-   - Server-side denial/authorization behavior is executable and verified.
-   - Final browser E2E with a provisioned production-style user profile remains before D08 promotion.
+4. **Production user/profile provisioning — OPEN**
+   - Authentication is configured, but a production-style user must have an explicit userProfiles record before operational PTW access is granted.
+   - No automatic self-registration-to-privileged-role path is permitted.
 
-Status: NOT PROMOTED.
+5. **Browser E2E: UI → Auth → C03 Scope → PTW → Convex — OPEN**
+   - Must be executed with a provisioned production-style profile.
+   - Required cases: authorized branch read/create/state transition and cross-branch denial.
+   - This is the final D08 promotion control.
 
-When control 4 passes, D08 becomes the reference vertical slice and the same execution contract is promoted to the next domain.
+6. **GitHub Runtime Gate — REVERIFY**
+   - The previous PASS referenced an older commit.
+   - Current commits must produce a fresh green Runtime Gate before D08 promotion.
+
+**Status: NOT PROMOTED.**
+
+D08 becomes the reference vertical slice only after controls 4–6 pass. No next-domain promotion before that gate.
