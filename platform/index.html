@@ -1,43 +1,89 @@
 <!doctype html>
 <html lang="fa" dir="rtl">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ایمن بندر — Development Dashboard</title>
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ایمن بندر — Target Platform</title>
 <style>
-body{font-family:Arial,sans-serif;margin:0;background:#f4f6f8;color:#17202a}.top{padding:22px;background:#17324d;color:#fff}.wrap{max-width:1100px;margin:auto;padding:18px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px}.card{background:#fff;border-radius:14px;padding:16px;margin:12px 0;box-shadow:0 2px 10px #0001}.kpi{font-size:26px;font-weight:700}.muted{color:#68737d}.ok{color:#087443;font-weight:700}.work{color:#9a6700;font-weight:700}.bad{color:#b42318;font-weight:700}.badge{display:inline-block;padding:5px 9px;border-radius:8px;background:#e8eef5;margin:3px}.bar{height:10px;background:#e5e7eb;border-radius:8px;overflow:hidden}.fill{height:100%;background:#198754}.actions{display:flex;flex-wrap:wrap;gap:5px}button{border:0;border-radius:9px;padding:9px 13px;cursor:pointer;background:#17324d;color:#fff}button.secondary{background:#68737d}button:disabled{opacity:.4;cursor:not-allowed}.log{font-family:monospace;background:#101820;color:#d7e2ea;border-radius:10px;padding:12px;white-space:pre-wrap;max-height:180px;overflow:auto}
-</style></head>
-<body><header class="top"><div class="wrap"><h1>ایمن بندر</h1><div>داشبورد توسعه و اجرای پلتفرم — PTW Vertical Slice</div></div></header>
-<main class="wrap">
-<section class="grid" id="summary"></section>
-<section class="card"><h2>مسیر توسعه</h2><div id="roadmap"></div></section>
-<section class="card"><h2>چرخه اجرایی PTW</h2><div class="muted">این صفحه DEMO است؛ تغییرات در مرورگر نگهداری می‌شوند و به دیتابیس واقعی متصل نیستند.</div><div id="permits">در حال بارگذاری...</div></section>
-<section class="card"><h2>گیت‌های معماری و Runtime</h2><div id="gates"></div></section>
-<section class="card"><h2>Audit Log — اجرای همین مرورگر</h2><div id="log" class="log">بدون رویداد</div><button class="secondary" onclick="resetDemo()">بازنشانی Demo</button></section>
-</main>
+*{box-sizing:border-box}body{margin:0;font-family:Tahoma,Arial,sans-serif;background:#f5f7fa;color:#17202a}
+header{height:64px;background:#12324a;color:#fff;display:flex;align-items:center;padding:0 22px;position:sticky;top:0;z-index:5}
+header strong{font-size:20px}header span{margin-right:16px;color:#c9d8e3;font-size:13px}
+.layout{display:flex;min-height:calc(100vh - 64px)}aside{width:240px;background:#fff;border-left:1px solid #e1e6eb;padding:14px;flex:none}
+nav button{width:100%;text-align:right;background:transparent;color:#243746;margin:3px 0;border-radius:10px}
+nav button:hover,nav button.active{background:#e9f0f5}
+main{flex:1;padding:22px;max-width:1500px;margin:auto;width:100%}
+.view{display:none}.view.active{display:block}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px}
+.card{background:#fff;border:1px solid #e2e8ee;border-radius:14px;padding:16px;box-shadow:0 2px 8px #0000000a;margin-bottom:14px}
+.kpi{font-size:25px;font-weight:700;margin-top:7px}.muted{color:#6b7782;font-size:13px}.title{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.badge{display:inline-block;padding:5px 9px;border-radius:8px;background:#eaf0f5;margin:2px;font-size:12px}.ok{color:#087443;font-weight:700}.warn{color:#9a6700;font-weight:700}.bad{color:#b42318;font-weight:700}
+button{border:0;border-radius:9px;padding:9px 12px;cursor:pointer;background:#12324a;color:#fff}button.secondary{background:#6b7782}button:disabled{opacity:.4;cursor:not-allowed}
+.actions{display:flex;flex-wrap:wrap;gap:6px}.bar{height:9px;background:#e7ebef;border-radius:8px;overflow:hidden}.fill{height:100%;background:#198754}
+table{width:100%;border-collapse:collapse}th,td{text-align:right;padding:10px;border-bottom:1px solid #edf0f2;font-size:13px}
+.notice{padding:12px;border-radius:10px;background:#eef5f8;margin-bottom:14px}.log{font-family:monospace;background:#101820;color:#d7e2ea;padding:12px;border-radius:10px;white-space:pre-wrap;max-height:190px;overflow:auto}
+@media(max-width:800px){aside{width:70px}aside .txt{display:none}main{padding:12px}header span{display:none}}
+</style>
+</head>
+<body>
+<header><strong>ایمن بندر</strong><span>Target Platform</span><span>نسخه توسعه: PTW Vertical Slice</span></header>
+<div class="layout">
+<aside>
+<nav>
+<button class="active" onclick="show('dashboard',this)">⌂ <span class="txt">داشبورد</span></button>
+<button onclick="show('permits',this)">▣ <span class="txt">مجوز کار PTW</span></button>
+<button onclick="show('people',this)">♙ <span class="txt">افراد و پیمانکاران</span></button>
+<button onclick="show('inspection',this)">✓ <span class="txt">بازرسی‌ها</span></button>
+<button onclick="show('incidents',this)">⚠ <span class="txt">حوادث و رویدادها</span></button>
+<button onclick="show('capa',this)">↻ <span class="txt">اقدامات اصلاحی CAPA</span></button>
+<button onclick="show('port',this)">⚓ <span class="txt">پایش زنده بندر</span></button>
+<button onclick="show('reports',this)">▤ <span class="txt">گزارش‌ها و تحلیل</span></button>
+<button onclick="show('architecture',this)">⌘ <span class="txt">معماری و توسعه</span></button>
+</nav>
+</aside>
+<main>
+<section id="dashboard" class="view active">
+<div class="title"><div><h1>داشبورد HSE</h1><div class="muted">مرکز عملیاتی پلتفرم ایمن بندر</div></div><span class="badge">DEMO / TEST-SEED</span></div>
+<div class="notice"><b>این دیگر صرفاً Development Dashboard نیست.</b> این صفحه پوسته عملیاتی Target Platform است؛ ماژول‌ها مرحله‌به‌مرحله به همین هسته اضافه می‌شوند.</div>
+<div class="grid">
+<div class="card"><div class="muted">مجوزهای فعال</div><div class="kpi" id="k-active">0</div></div>
+<div class="card"><div class="muted">مجوزهای در انتظار</div><div class="kpi" id="k-pending">0</div></div>
+<div class="card"><div class="muted">بازرسی‌های امروز</div><div class="kpi">12</div></div>
+<div class="card"><div class="muted">اقدامات باز</div><div class="kpi">8</div></div>
+<div class="card"><div class="muted">رویدادهای ثبت‌شده</div><div class="kpi">2</div></div>
+</div>
+<div class="grid">
+<div class="card"><h3>وضعیت توسعه</h3><p>Target Architecture <b class="ok">FROZEN</b></p><p>PTW Vertical Slice <b class="ok">READY/DEMO</b></p><p>LOTO / Authorization / Workflow <b class="ok">CONNECTED</b></p><div class="bar"><div class="fill" style="width:67%"></div></div><p class="muted">مسیر عمودی فعلی: PTW</p></div>
+<div class="card"><h3>دسترسی سریع</h3><div class="actions"><button onclick="showById('permits')">صدور/مدیریت PTW</button><button onclick="showById('port')">پایش بندر</button><button onclick="showById('reports')">گزارش مدیریت</button></div></div>
+</div>
+</section>
+
+<section id="permits" class="view"><div class="title"><div><h1>مجوز کار PTW</h1><div class="muted">چرخه عملیاتی Request → Authorization → Issue → LOTO/Gas → Activate → Close</div></div><button class="secondary" onclick="resetDemo()">بازنشانی Demo</button></div><div id="permit-list">در حال بارگذاری...</div><div class="card"><h3>Audit Log</h3><div id="log" class="log">بدون رویداد</div></div></section>
+
+<section id="people" class="view"><div class="title"><h1>افراد و پیمانکاران</h1><span class="badge">C02 / C03 / C11</span></div><div class="grid"><div class="card"><h3>Master Person</h3><div class="kpi">1,284</div><div class="muted">پرونده‌های نمونه</div></div><div class="card"><h3>پیمانکاران</h3><div class="kpi">54</div><div class="muted">واحدهای نمونه</div></div><div class="card"><h3>صلاحیت‌های معتبر</h3><div class="kpi">932</div><div class="muted">متصل به Authorization Core</div></div></div><div class="card"><h3>اصل معماری</h3><p>یک Person/Workforce Master؛ بدون پرونده‌های موازی. آموزش، آزمون، PPE، مجوز و سوابق از همین هویت استفاده می‌کنند.</p></div></section>
+
+<section id="inspection" class="view"><div class="title"><h1>بازرسی‌ها</h1><span class="badge">C13 Inspection Engine</span></div><div class="card"><table><tr><th>موضوع</th><th>ناحیه</th><th>وضعیت</th><th>آخرین اقدام</th></tr><tr><td>کپسول‌های آتش‌نشانی</td><td>TEST-AREA-A</td><td class="ok">مجاز</td><td>امروز</td></tr><tr><td>جعبه کمک‌های اولیه</td><td>TEST-AREA-B</td><td class="warn">نیازمند اقدام</td><td>ثبت CAPA</td></tr><tr><td>Life Ring</td><td>اسکله نمونه</td><td class="ok">مجاز</td><td>امروز</td></tr></table></div></section>
+
+<section id="incidents" class="view"><div class="title"><h1>حوادث و رویدادها</h1><span class="badge">C14 Event & Incident Engine</span></div><div class="grid"><div class="card"><div class="muted">رویدادهای امروز</div><div class="kpi">2</div></div><div class="card"><div class="muted">در انتظار بررسی</div><div class="kpi">1</div></div><div class="card"><div class="muted">حادثه قابل گزارش</div><div class="kpi">0</div></div></div></section>
+
+<section id="capa" class="view"><div class="title"><h1>اقدامات اصلاحی و پیشگیرانه</h1><span class="badge">CAPA</span></div><div class="card"><table><tr><th>کد</th><th>منبع</th><th>مسئول</th><th>موعد</th><th>وضعیت</th></tr><tr><td>CAPA-001</td><td>بازرسی</td><td>واحد HSE</td><td>1405/07/05</td><td class="warn">باز</td></tr><tr><td>CAPA-002</td><td>رویداد</td><td>پیمانکار</td><td>1405/07/08</td><td class="ok">در حال اجرا</td></tr></table></div></section>
+
+<section id="port" class="view"><div class="title"><h1>پایش زنده بندر</h1><span class="badge">D04</span></div><div class="grid"><div class="card"><div class="muted">کشتی‌های در حال عملیات</div><div class="kpi">3</div></div><div class="card"><div class="muted">در حال پهلوگیری</div><div class="kpi">1</div></div><div class="card"><div class="muted">بارگیری</div><div class="kpi">2</div></div><div class="card"><div class="muted">وضعیت ایمنی محصول</div><div class="kpi ok">عادی</div></div></div><div class="card"><h3>تابلوی عملیات</h3><table><tr><th>شناسه</th><th>وضعیت</th><th>عملیات</th><th>ایمنی</th></tr><tr><td>VESSEL-01</td><td>در اسکله</td><td>بارگیری</td><td class="ok">عادی</td></tr><tr><td>VESSEL-02</td><td>در حال پهلوگیری</td><td>ورود</td><td class="ok">عادی</td></tr><tr><td>VESSEL-03</td><td>در اسکله</td><td>تخلیه</td><td class="warn">پایش</td></tr></table></div></section>
+
+<section id="reports" class="view"><div class="title"><h1>گزارش‌ها و تحلیل</h1><span class="badge">C17 KPI / Reporting</span></div><div class="grid"><div class="card"><h3>گزارش روزانه</h3><p>تجمیع گزارش‌های واحد / شیفت / منطقه</p><button>ایجاد گزارش</button></div><div class="card"><h3>گزارش PTW</h3><p>مجوزها بر اساس منطقه، نوع کار و وضعیت</p><button onclick="showById('permits')">مشاهده داده</button></div><div class="card"><h3>گزارش مدیریتی AI</h3><p>خلاصه دوره‌ای از داده‌های عملیاتی و اقدامات باز</p><button>ساخت پیش‌نمایش</button></div></div></section>
+
+<section id="architecture" class="view"><div class="title"><h1>معماری و توسعه</h1><span class="badge">SOURCE OF TRUTH</span></div><div class="grid"><div class="card"><h3>Target Architecture</h3><div class="kpi">FROZEN</div><p>CORE 25 · DOMAIN 29 · GROUP 567 · MODULE 384</p></div><div class="card"><h3>Vertical Slice</h3><div class="kpi">PTW</div><p>PTW + LOTO + Authorization + Workflow</p></div><div class="card"><h3>داده</h3><div class="kpi">TEST/SEED</div><p>این Demo دیتابیس عملیاتی واقعی نیست.</p></div></div><div class="card"><h3>قاعده توسعه</h3><p><b>Target Architecture اولویت دارد.</b> V263.15 و پروژه‌های قبلی فقط Source/Evidence هستند.</p><p>هر قابلیت جدید باید از Core/Domain/Group/Module/ Submodule و قراردادهای مربوط عبور کند.</p></div></section>
+</main></div>
 <script>
 let seed,permits,logs=[];
-const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const labels={REQUESTED:'درخواست‌شده',PENDING_APPROVAL:'در انتظار تأیید',ISSUED:'صادرشده',ACTIVE:'فعال',SUSPENDED:'معلق',RESUMED:'ادامه‌یافته',CLOSED:'بسته‌شده'};
+const esc=s=>String(s??'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+function show(id,btn){document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));document.getElementById(id).classList.add('active');document.querySelectorAll('nav button').forEach(x=>x.classList.remove('active'));if(btn)btn.classList.add('active');}
+function showById(id){show(id);window.scrollTo({top:0,behavior:'smooth'});}
 function can(p,a){if(a==='approve')return p.status==='REQUESTED';if(a==='issue')return p.status==='PENDING_APPROVAL'&&p.authorizationApproved;if(a==='activate')return p.status==='ISSUED'&&p.authorizationApproved&&(!p.requiresLoto||p.lotoApplied)&&(!p.requiredGasTest||p.gasTestPassed);if(a==='suspend')return ['ACTIVE','RESUMED'].includes(p.status);if(a==='resume')return p.status==='SUSPENDED';if(a==='loto')return p.requiresLoto&&['ISSUED','SUSPENDED','RESUMED'].includes(p.status)&&!p.lotoApplied;if(a==='gas')return p.requiredGasTest&&!p.gasTestPassed&&['ISSUED','SUSPENDED','RESUMED'].includes(p.status);if(a==='release')return p.requiresLoto&&p.lotoApplied&&['SUSPENDED','RESUMED','ACTIVE'].includes(p.status);if(a==='close')return ['ACTIVE','RESUMED'].includes(p.status)&&(!p.requiresLoto||p.lotoReleased);return false}
-function act(id,a){const p=permits.find(x=>x.id===id);if(!can(p,a)){logs.unshift('DENY  '+id+'  '+a);render();return}
-if(a==='approve'){p.authorizationApproved=true;p.status='PENDING_APPROVAL'}
-if(a==='issue')p.status='ISSUED'
-if(a==='loto')p.lotoApplied=true
-if(a==='gas')p.gasTestPassed=true
-if(a==='activate')p.status='ACTIVE'
-if(a==='suspend')p.status='SUSPENDED'
-if(a==='resume')p.status='RESUMED'
-if(a==='release')p.lotoReleased=true
-if(a==='close')p.status='CLOSED'
-logs.unshift('ALLOW '+id+'  '+a+'  → '+p.status);save();render()}
+function act(id,a){const p=permits.find(x=>x.id===id);if(!can(p,a)){logs.unshift('DENY '+id+' '+a);render();return}if(a==='approve'){p.authorizationApproved=true;p.status='PENDING_APPROVAL'}if(a==='issue')p.status='ISSUED';if(a==='loto')p.lotoApplied=true;if(a==='gas')p.gasTestPassed=true;if(a==='activate')p.status='ACTIVE';if(a==='suspend')p.status='SUSPENDED';if(a==='resume')p.status='RESUMED';if(a==='release')p.lotoReleased=true;if(a==='close')p.status='CLOSED';logs.unshift('ALLOW '+id+' '+a+' → '+p.status);save();render();}
 function save(){localStorage.setItem('eiman-ptw-demo',JSON.stringify({permits,logs}))}
 function resetDemo(){localStorage.removeItem('eiman-ptw-demo');permits=structuredClone(seed.permits);logs=[];render()}
-function button(id,a,text){const p=permits.find(x=>x.id===id);return '<button '+(can(p,a)?'':'disabled')+' onclick="act(\''+id+'\',\''+a+'\')">'+text+'</button>'}
-function render(){
-document.getElementById('summary').innerHTML=[['نسخه','V26'],['مرحله','PTW Vertical Slice'],['معماری','FROZEN'],['محیط','DEMO']].map(x=>'<div class="card"><div class="muted">'+x[0]+'</div><div class="kpi">'+x[1]+'</div></div>').join('');
-const done=4,pct=67;document.getElementById('roadmap').innerHTML='<p><b>گیت‌های پایه: '+done+'/6 — '+pct+'٪</b></p><div class="bar"><div class="fill" style="width:'+pct+'%"></div></div><p class="muted">چرخه: Request → Authorization → Issue → LOTO/Gas → Activate → Suspend/Resume → Release → Close</p>';
-document.getElementById('permits').innerHTML=permits.map(p=>'<div class="card"><b>'+esc(p.id)+'</b> <span class="badge">'+esc(labels[p.status]||p.status)+'</span><br>نوع: '+esc(p.type)+' — محل: '+esc(p.location)+'<br><span class="muted">Authorization: '+(p.authorizationApproved?'✓':'—')+' | LOTO: '+(p.lotoApplied?'Applied':'—')+(p.lotoReleased?' / Released':'')+' | Gas: '+(p.gasTestPassed?'PASS':'—')+'</span><div class="actions" style="margin-top:10px">'+button(p.id,'approve','تأیید صلاحیت')+button(p.id,'issue','صدور مجوز')+button(p.id,'loto','اعمال LOTO')+button(p.id,'gas','ثبت Gas PASS')+button(p.id,'activate','فعال‌سازی')+button(p.id,'suspend','تعلیق')+button(p.id,'resume','ادامه کار')+button(p.id,'release','آزادسازی LOTO')+button(p.id,'close','بستن مجوز')+'</div></div>').join('');
-document.getElementById('gates').innerHTML=['Target Architecture ✓ PASS','PTW Contract ✓ PASS','LOTO Dependency ✓ PASS','Authorization Boundary ✓ PASS','Workflow Boundary ✓ PASS','Runtime Scenario → اجرای تعاملی'].map(x=>'<div><span class="badge">'+x+'</span></div>').join('');
-document.getElementById('log').textContent=logs.length?logs.join('\n'):'بدون رویداد';
-}
-fetch('./data/ptw-demo.json').then(r=>r.json()).then(d=>{seed=d;const saved=JSON.parse(localStorage.getItem('eiman-ptw-demo')||'null');permits=saved?.permits||structuredClone(d.permits);logs=saved?.logs||[];render()}).catch(e=>document.getElementById('permits').textContent='خطا: '+e);
-</script></body></html>
+function btn(id,a,t){const p=permits.find(x=>x.id===id);return '<button '+(can(p,a)?'':'disabled')+' onclick="act(\''+id+'\',\''+a+'\')">'+t+'</button>'}
+function render(){const active=permits.filter(p=>p.status==='ACTIVE'||p.status==='RESUMED').length;const pending=permits.filter(p=>['REQUESTED','PENDING_APPROVAL','ISSUED'].includes(p.status)).length;document.getElementById('k-active').textContent=active;document.getElementById('k-pending').textContent=pending;
+document.getElementById('permit-list').innerHTML=permits.map(p=>'<div class="card"><div class="title"><div><b>'+esc(p.id)+'</b> <span class="badge">'+esc(labels[p.status]||p.status)+'</span><div class="muted">'+esc(p.type)+' · '+esc(p.location)+'</div></div><span class="badge">Authorization '+(p.authorizationApproved?'✓':'—')+'</span></div><p class="muted">LOTO: '+(p.lotoApplied?'Applied':'—')+(p.lotoReleased?' / Released':'')+' · Gas: '+(p.gasTestPassed?'PASS':'—')+'</p><div class="actions">'+btn(p.id,'approve','تأیید صلاحیت')+btn(p.id,'issue','صدور مجوز')+btn(p.id,'loto','اعمال LOTO')+btn(p.id,'gas','ثبت Gas PASS')+btn(p.id,'activate','فعال‌سازی')+btn(p.id,'suspend','تعلیق')+btn(p.id,'resume','ادامه کار')+btn(p.id,'release','آزادسازی LOTO')+btn(p.id,'close','بستن مجوز')+'</div></div>').join('');document.getElementById('log').textContent=logs.length?logs.join('\n'):'بدون رویداد';}
+fetch('./data/ptw-demo.json').then(r=>r.json()).then(d=>{seed=d;const s=JSON.parse(localStorage.getItem('eiman-ptw-demo')||'null');permits=s?.permits||structuredClone(d.permits);logs=s?.logs||[];render()}).catch(e=>document.getElementById('permit-list').textContent='خطا: '+e);
+</script>
+</body></html>
