@@ -1,17 +1,1 @@
-{
-  "platform": "ایمن بندر",
-  "environment": "DEMO",
-  "data_classification": "TEST/SEED",
-  "current_stage": "PTW Vertical Slice",
-  "version": "V26",
-  "architecture": {"status":"FROZEN","core":25,"domains":29,"groups":567,"modules":384},
-  "gates": [
-    {"name":"Target Architecture","status":"PASS"},
-    {"name":"PTW Contract","status":"PASS"},
-    {"name":"LOTO Dependency","status":"PASS"},
-    {"name":"Authorization Boundary","status":"PASS"},
-    {"name":"Workflow Boundary","status":"PASS"},
-    {"name":"Runtime Scenario","status":"IN_PROGRESS"}
-  ],
-  "next_step": "Complete runnable PTW lifecycle and gate it before moving to the next domain."
-}
+{"platform":"ایمن بندر","environment":"DEMO","data_classification":"TEST/SEED","current_stage":"PTW Vertical Slice","version":"V27","architecture":{"status":"FROZEN","core":25,"domains":29,"groups":567,"modules":384},"gates":[{"name":"Target Architecture","status":"PASS"},{"name":"PTW Contract","status":"PASS"},{"name":"LOTO Dependency","status":"PASS"},{"name":"Authorization Boundary","status":"PASS"},{"name":"Workflow Boundary","status":"PASS"},{"name":"Runtime Scenario","status":"CI_IN_PROGRESS"}],"runtime_semantics":{"activation_requires":"LOTO_APPLIED","closure_requires":"LOTO_RELEASED"},"next_step":"Complete CI runtime gate; only after PASS, freeze the PTW slice and move to the next domain."}
