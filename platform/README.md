@@ -1,18 +1,7 @@
-# اجرای سریع
+# ایمن بندر — Target Platform
 
-این نسخه برای دیدن پلتفرم بدون نصب Backend ساخته شده است.
+GitHub Pages این پوشه را به‌صورت **DEMO/Preview** اجرا می‌کند.
 
-## روش 1 — GitHub Pages
-محتویات پوشه platform به‌عنوان سایت استاتیک قابل انتشار است.
+این Demo برای نمایش رابط و سناریوهای Target Platform است؛ دیتابیس چندکاربره و سرویس عملیاتی Production نیست.
 
-## روش 2 — اجرای محلی
-در پوشه platform یک web server ساده اجرا کنید، سپس index.html را در مرورگر باز کنید.
-
-مثال:
-python -m http.server 8080
-سپس: http://localhost:8080
-
-## معماری داده
-UI ← JSON Contract ← Runtime/Domain
-
-JSON فقط لایه داده/دمو است؛ Source of Truth معماری نیست و جایگزین Registry هدف نمی‌شود.
+مرز اجرای واقعی در `runtime/` قرار دارد و معماری در `ARCHITECTURE/` مرجع قطعی است.
