@@ -1,0 +1,21 @@
+{
+  "schema_version": "LOTO-CONTRACT-V1",
+  "entity": "Isolation",
+  "required": [
+    "isolation_id",
+    "permit_id",
+    "energy_sources",
+    "isolations",
+    "tags",
+    "verification",
+    "release"
+  ],
+  "lifecycle": [
+    "PLANNED",
+    "APPLIED",
+    "VERIFIED",
+    "RELEASE_PENDING",
+    "RELEASED"
+  ],
+  "data_classification": "OPERATIONAL"
+}
