@@ -1,0 +1,37 @@
+{
+  "schema_version": "PTW-CONTRACT-V1",
+  "entity": "Permit",
+  "status_enum": [
+    "DRAFT",
+    "REQUESTED",
+    "RISK_REVIEW",
+    "PENDING_APPROVAL",
+    "ISSUED",
+    "ACTIVE",
+    "SUSPENDED",
+    "RESUMED",
+    "CLOSED",
+    "CANCELLED",
+    "EXPIRED"
+  ],
+  "required": [
+    "permit_id",
+    "permit_type",
+    "work_location",
+    "requester",
+    "shift",
+    "validity",
+    "hazards",
+    "controls",
+    "approval",
+    "status"
+  ],
+  "rules": {
+    "normal_validity": "ONE_WORK_SHIFT",
+    "start_deadline_hours": 2,
+    "excavation": "EXPLICIT_DURATION",
+    "as_saluyeh_max_hours": 12,
+    "mahshahr_max_hours": 8
+  },
+  "data_classification": "OPERATIONAL"
+}
