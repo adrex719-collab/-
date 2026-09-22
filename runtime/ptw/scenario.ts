@@ -4,7 +4,7 @@ import { canActivate, canClose, canReleaseLoto, startDeadlinePassed } from "./en
 export function runScenario(): string[] {
   const now = new Date("2026-09-22T12:00:00Z");
   const p: Permit = {
-    id:"SEED-HOT-001", type:"HOT_WORK", location:"TEST-AREA", issuedAt:"2026-09-22T09:00:00Z",
+    id:"SEED-HOT-001", type:"HOT_WORK", location:"TEST-AREA", branchId:"BR-A", issuedAt:"2026-09-22T09:00:00Z",
     status:"ISSUED", requiresLoto:true, lotoApplied:true, lotoReleased:false,
     requiredGasTest:true, gasTestPassed:true, authorizationApproved:true
   };
