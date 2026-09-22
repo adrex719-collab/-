@@ -3,7 +3,7 @@
   "mode":"DEMO",
   "data_classification":"TEST/SEED",
   "permits":[
-    {"id":"SEED-COLD-001","type":"COLD_WORK","location":"TEST-AREA-A","status":"ISSUED","authorizationApproved":true,"requiresLoto":false,"requiredGasTest":false},
-    {"id":"SEED-HOT-001","type":"HOT_WORK","location":"TEST-AREA-B","status":"ISSUED","authorizationApproved":true,"requiresLoto":true,"requiredGasTest":true}
+    {"id":"SEED-COLD-001","type":"COLD_WORK","location":"TEST-AREA-A","status":"REQUESTED","authorizationApproved":false,"requiresLoto":false,"lotoApplied":false,"lotoReleased":false,"requiredGasTest":false,"gasTestPassed":false},
+    {"id":"SEED-HOT-001","type":"HOT_WORK","location":"TEST-AREA-B","status":"REQUESTED","authorizationApproved":false,"requiresLoto":true,"lotoApplied":false,"lotoReleased":false,"requiredGasTest":true,"gasTestPassed":false}
   ]
 }
