@@ -1,0 +1,23 @@
+{
+  "dataset": "PTW-SEED-V1",
+  "classification": "TEST/SEED",
+  "production": false,
+  "records": [
+    {
+      "id": "SEED-COLD-001",
+      "type": "COLD_WORK"
+    },
+    {
+      "id": "SEED-HOT-001",
+      "type": "HOT_WORK"
+    },
+    {
+      "id": "SEED-CONFINED-001",
+      "type": "CONFINED_SPACE"
+    },
+    {
+      "id": "SEED-EXCAVATION-001",
+      "type": "EXCAVATION"
+    }
+  ]
+}
