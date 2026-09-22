@@ -32,8 +32,7 @@ function guardTransition(status: Status, next: Status, p: {authorizationApproved
 export const list = query({
   args:{branchId:v.string(),limit:v.optional(v.number())},
   handler:async(ctx,args)=>{
-    const permits=await ctx.db.query("permits").withIndex("by_status").order("desc").take(100)
-    return permits.filter(p=>p.branchId===args.branchId).slice(0,Math.min(args.limit??50,100))
+    return await ctx.db.query("permits").withIndex("by_branch_status",q=>q.eq("branchId",args.branchId)).order("desc").take(Math.min(args.limit??50,100))
   },
 })
 
