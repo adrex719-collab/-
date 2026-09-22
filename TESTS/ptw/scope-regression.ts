@@ -4,7 +4,7 @@ import { canActivate, canClose, canReleaseLoto, startDeadlinePassed } from "../.
 function assert(name:string, value:boolean){ if(!value) throw new Error("FAIL: "+name); console.log("PASS: "+name); }
 
 const base: Permit = {
-  id:"TEST-HOT-001", type:"HOT_WORK", location:"TEST-AREA",
+  id:"TEST-HOT-001", type:"HOT_WORK", location:"TEST-AREA", branchId:"BR-A",
   issuedAt:"2026-09-22T09:00:00Z", status:"ISSUED",
   requiresLoto:true, lotoApplied:false, lotoReleased:false,
   requiredGasTest:true, gasTestPassed:true, authorizationApproved:true
