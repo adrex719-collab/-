@@ -36,8 +36,8 @@ function guardTransition(status: Status, next: Status, p: {
 }
 
 export const list = query({
-  args: { limit: v.optional(v.number()) },
-  handler: async (ctx, args) => ctx.db.query("permits").withIndex("by_status").order("desc").take(Math.min(args.limit ?? 50, 100)),
+  args: { branchId: v.string(), limit: v.optional(v.number()) },
+  handler: async (ctx, args) => ctx.db.query("permits").withIndex("by_status").order("desc").filter(q => q.eq(q.field("branchId"), args.branchId)).take(Math.min(args.limit ?? 50, 100)),
 })
 
 export const create = mutation({
@@ -62,12 +62,13 @@ export const create = mutation({
 
 export const updateState = mutation({
   args: {
-    id: v.id("permits"), status: permitStatus, authorizationApproved: v.boolean(),
+    id: v.id("permits"), branchId: v.string(), status: permitStatus, authorizationApproved: v.boolean(),
     lotoApplied: v.boolean(), lotoReleased: v.boolean(), gasTestPassed: v.boolean(),
   },
   handler: async (ctx, args) => {
     const permit = await ctx.db.get(args.id)
     if (!permit) invalid("مجوز پیدا نشد.")
+    if (permit.branchId !== args.branchId) invalid("دسترسی به Permit خارج از Branch Scope مجاز نیست.")
     guardTransition(permit.status, args.status, permit)
     if (args.authorizationApproved && !permit.authorizationApproved && permit.status !== "PENDING_APPROVAL") invalid("Authorization فقط در مرحله تأیید مجوز قابل ثبت است.")
     if (args.lotoApplied && !permit.lotoApplied && permit.status !== "ISSUED") invalid("LOTO فقط در مرحله ISSUED قابل اعمال است.")
