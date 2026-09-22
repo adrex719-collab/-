@@ -43,10 +43,12 @@ export const list = query({
 export const create = mutation({
   args: {
     permitId: v.string(), type: permitType, location: v.string(),
+    organizationId: v.optional(v.string()), regionId: v.optional(v.string()), branchId: v.optional(v.string()), siteId: v.optional(v.string()), unitId: v.optional(v.string()),
     requiresLoto: v.boolean(), requiredGasTest: v.boolean(),
     dataClass: v.union(v.literal("TEST/SEED"), v.literal("OPERATIONAL")),
   },
   handler: async (ctx, args) => {
+    if (!args.branchId) invalid("ثبت Permit بدون Branch Scope مجاز نیست.")
     const duplicate = await ctx.db.query("permits").withIndex("by_permit_id", q => q.eq("permitId", args.permitId)).first()
     if (duplicate) invalid("شناسه Permit تکراری است.")
     const now = Date.now()
