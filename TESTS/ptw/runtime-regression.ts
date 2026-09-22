@@ -1,5 +1,5 @@
-import { Permit } from "../runtime/ptw/domain";
-import { canActivate, canClose, canReleaseLoto, startDeadlinePassed } from "../runtime/ptw/engine";
+import { Permit } from "../../runtime/ptw/domain";
+import { canActivate, canClose, canReleaseLoto, startDeadlinePassed } from "../../runtime/ptw/engine";
 
 function assert(name:string, value:boolean){ if(!value) throw new Error("FAIL: "+name); console.log("PASS: "+name); }
 
