@@ -2,29 +2,19 @@
 
 CORE is the shared platform capability layer.
 
-## Core capabilities
-C01 Organization & Master Data
-C02 Person & Workforce
-C03 Identity, Role, Access & Scope
-C04 Location, Area & Presence
-C05 Asset & Equipment Master
-C06 Item & Material Master
-C07 Party & External Entity Master
-C08 Document, Record & Knowledge
-C09 Workflow & Approval
-C10 Task, Action & Obligation
-C11 Competency, Training, Examination & Authorization
-C12 Risk Engine
-C13 Inspection Engine
-C14 Event & Incident Engine
-C15 Notification & Alert Engine
-C16 Global Search
-C17 KPI, Reporting & Analytics Engine
-C18 Rules & Decision Engine
-C19 Automation Engine
-C20 Evidence & Audit
-C21 Context & Scenario
-C22 Integration & Data Exchange
-C23 AI & Offline Intelligence
+The frozen target has 25 CORE, C01–C25. See CORE-MANIFEST.md for the canonical list.
 
-All domains consume these capabilities rather than recreate them.
+All domains consume CORE capabilities rather than recreating them.
+
+### Mandatory boundaries
+- C03 owns identity, role, access and scope enforcement.
+- C09 owns shared workflow/approval.
+- C11 owns qualification/training/examination/authorization.
+- C12 owns the shared risk engine.
+- C13 owns shared inspection.
+- C14 owns shared event/incident.
+- C20 owns evidence/audit.
+- C17 owns KPI/reporting/analytics.
+- C16 owns global search.
+
+No domain-specific master may duplicate these engines.
