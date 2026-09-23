@@ -4,8 +4,8 @@ import { getAuthUserId } from "@convex-dev/auth/server"
 import { requireScope, can, canTransition, canSeeRecordScope } from "./authz"
 
 const permitType=v.union(v.literal("COLD_WORK"),v.literal("HOT_WORK"),v.literal("CONFINED_SPACE"),v.literal("EXCAVATION"),v.literal("ELECTRICAL"),v.literal("VEHICLE_ENTRY"),v.literal("ROAD_CLOSURE"),v.literal("RADIOGRAPHY"))
-const permitStatus=v.union(v.literal("REQUESTED"),v.literal("PENDING_APPROVAL"),v.literal("ISSUED"),v.literal("ACTIVE"),v.literal("SUSPENDED"),v.literal("RESUMED"),v.literal("CLOSED"),v.literal("CANCELLED"),v.literal("EXPIRED"))
-type Status="REQUESTED"|"PENDING_APPROVAL"|"ISSUED"|"ACTIVE"|"SUSPENDED"|"RESUMED"|"CLOSED"|"CANCELLED"|"EXPIRED"
+const permitStatus=v.union(v.literal("REQUESTED"),v.literal("RISK_REVIEW"),v.literal("PENDING_APPROVAL"),v.literal("ISSUED"),v.literal("ACTIVE"),v.literal("SUSPENDED"),v.literal("RESUMED"),v.literal("CLOSED"),v.literal("CANCELLED"),v.literal("EXPIRED"))
+type Status="REQUESTED"|"RISK_REVIEW"|"PENDING_APPROVAL"|"ISSUED"|"ACTIVE"|"SUSPENDED"|"RESUMED"|"CLOSED"|"CANCELLED"|"EXPIRED"
 
 const permitDoc=v.object({
   _id:v.id("permits"),_creationTime:v.number(),permitId:v.string(),
@@ -17,16 +17,17 @@ const permitDoc=v.object({
   specializedProfile:v.optional(v.string()),ruleSetId:v.optional(v.string()),ruleSetVersion:v.optional(v.string()),
   effectiveProcedureId:v.optional(v.string()),effectiveProcedureRevision:v.optional(v.string()),
   location:v.string(),activityDescription:v.optional(v.string()),requester:v.optional(v.string()),responsiblePerson:v.optional(v.string()),contractor:v.optional(v.string()),workDate:v.optional(v.string()),shift:v.optional(v.string()),hazards:v.optional(v.array(v.string())),controls:v.optional(v.array(v.string())),ppe:v.optional(v.array(v.string())),startAt:v.optional(v.string()),endAt:v.optional(v.string()),excavationDurationHours:v.optional(v.number()),
-  status:permitStatus,authorizationApproved:v.boolean(),requiresLoto:v.boolean(),lotoApplied:v.boolean(),lotoReleased:v.boolean(),requiredGasTest:v.boolean(),gasTestPassed:v.boolean(),
-  lotoEvidence:v.optional(v.string()),gasTestEvidence:v.optional(v.string()),suspensionReason:v.optional(v.string()),closureNotes:v.optional(v.string()),
+  status:permitStatus,authorizationApproved:v.boolean(),riskReviewed:v.boolean(),eligibilityVerified:v.boolean(),requiresLoto:v.boolean(),lotoApplied:v.boolean(),lotoReleased:v.boolean(),tagRemovalVerified:v.boolean(),requiredGasTest:v.boolean(),gasTestPassed:v.boolean(),
+  tagRemovalVerified:v.optional(v.boolean()),lotoEvidence:v.optional(v.string()),gasTestEvidence:v.optional(v.string()),suspensionReason:v.optional(v.string()),closureNotes:v.optional(v.string()),
   dataClass:v.union(v.literal("TEST/SEED"),v.literal("OPERATIONAL")),createdAt:v.number(),updatedAt:v.number()
 })
 const legacyPermitDoc=v.object({_id:v.id("permits"),_creationTime:v.number(),permitId:v.string(),organizationId:v.optional(v.string()),regionId:v.optional(v.string()),branchId:v.optional(v.string()),siteId:v.optional(v.string()),unitId:v.optional(v.string()),type:v.union(v.literal("COLD_WORK"),v.literal("HOT_WORK"),v.literal("CONFINED_SPACE"),v.literal("EXCAVATION")),location:v.string(),status:permitStatus,authorizationApproved:v.boolean(),requiresLoto:v.boolean(),lotoApplied:v.boolean(),lotoReleased:v.boolean(),requiredGasTest:v.boolean(),gasTestPassed:v.boolean(),dataClass:v.union(v.literal("TEST/SEED"),v.literal("OPERATIONAL")),createdAt:v.number(),updatedAt:v.number()})
 const accessResult=v.union(v.object({ok:v.literal(true),permits:v.array(permitDoc)}),v.object({ok:v.literal(false),code:v.string(),permits:v.array(permitDoc)}))
 
 function guardTransition(status:Status,next:Status,p:any){
-  const allowed:Record<Status,Status[]>={REQUESTED:["PENDING_APPROVAL","CANCELLED"],PENDING_APPROVAL:["ISSUED","CANCELLED"],ISSUED:["ACTIVE","CANCELLED","EXPIRED"],ACTIVE:["SUSPENDED"],SUSPENDED:["RESUMED","CANCELLED"],RESUMED:["CLOSED","SUSPENDED"],CLOSED:[],CANCELLED:[],EXPIRED:[]}
+  const allowed:Record<Status,Status[]>={REQUESTED:["RISK_REVIEW","CANCELLED"],RISK_REVIEW:["PENDING_APPROVAL","CANCELLED"],PENDING_APPROVAL:["ISSUED","CANCELLED"],ISSUED:["ACTIVE","CANCELLED","EXPIRED"],ACTIVE:["SUSPENDED"],SUSPENDED:["RESUMED","CANCELLED"],RESUMED:["CLOSED","SUSPENDED"],CLOSED:[],CANCELLED:[],EXPIRED:[]}
   if(!allowed[status].includes(next))return"INVALID_TRANSITION"
+  if(next==="PENDING_APPROVAL"&&!p.riskReviewed)return"RISK_REVIEW_REQUIRED"
   if(next==="ISSUED"&&!p.authorizationApproved)return"AUTHORIZATION_REQUIRED"
   if(next==="ACTIVE"){
     if(!p.authorizationApproved)return"AUTHORIZATION_REQUIRED"
@@ -34,9 +35,11 @@ function guardTransition(status:Status,next:Status,p:any){
     if(p.requiredGasTest&&!p.gasTestPassed)return"GAS_TEST_REQUIRED"
   }
   if(next==="CLOSED"&&p.requiresLoto&&!p.lotoReleased)return"LOTO_RELEASE_REQUIRED"
+  if(next==="CLOSED"&&!p.tagRemovalVerified)return"TAG_REMOVAL_VERIFICATION_REQUIRED"
   return null
 }
 function permissionFor(next:Status){
+  if(next==="RISK_REVIEW")return"ptw.risk_review"
   if(next==="PENDING_APPROVAL")return"ptw.approve"
   if(next==="ISSUED")return"ptw.issue"
   if(next==="ACTIVE")return"ptw.activate"
@@ -113,13 +116,13 @@ export const createScoped=mutation({
     const duplicate=await ctx.db.query("permits").withIndex("by_permit_id",q=>q.eq("permitId",args.permitId)).first()
     if(duplicate)return{ok:false,code:"DUPLICATE_PERMIT"}
     const now=Date.now()
-    const id=await ctx.db.insert("permits",{...args,permitFamily:family,relationshipType:family,parentPermitId:args.parentPermitId,rootPermitId,specializedProfile:args.specializedProfile,ruleSetId:args.ruleSetId,ruleSetVersion:args.ruleSetVersion,effectiveProcedureId:args.effectiveProcedureId,effectiveProcedureRevision:args.effectiveProcedureRevision,status:"REQUESTED",authorizationApproved:false,lotoApplied:false,lotoReleased:false,gasTestPassed:false,createdAt:now,updatedAt:now})
+    const id=await ctx.db.insert("permits",{...args,permitFamily:family,relationshipType:family,parentPermitId:args.parentPermitId,rootPermitId,specializedProfile:args.specializedProfile,ruleSetId:args.ruleSetId,ruleSetVersion:args.ruleSetVersion,effectiveProcedureId:args.effectiveProcedureId,effectiveProcedureRevision:args.effectiveProcedureRevision,status:"REQUESTED",authorizationApproved:false,lotoApplied:false,lotoReleased:false,tagRemovalVerified:false,gasTestPassed:false,riskReviewed:false,eligibilityVerified:false,createdAt:now,updatedAt:now})
     return{ok:true,id}
   }
 })
 
 export const updateStateScoped=mutation({
-  args:{id:v.id("permits"),organizationId:v.string(),regionId:v.optional(v.string()),branchId:v.string(),siteId:v.optional(v.string()),unitId:v.optional(v.string()),status:permitStatus,authorizationApproved:v.boolean(),lotoApplied:v.boolean(),lotoReleased:v.boolean(),gasTestPassed:v.boolean(),lotoEvidence:v.optional(v.string()),gasTestEvidence:v.optional(v.string()),suspensionReason:v.optional(v.string()),closureNotes:v.optional(v.string())},
+  args:{id:v.id("permits"),organizationId:v.string(),regionId:v.optional(v.string()),branchId:v.string(),siteId:v.optional(v.string()),unitId:v.optional(v.string()),status:permitStatus,authorizationApproved:v.boolean(),lotoApplied:v.boolean(),lotoReleased:v.boolean(),gasTestPassed:v.boolean(),tagRemovalVerified:v.boolean(),riskReviewed:v.boolean(),eligibilityVerified:v.boolean(),lotoEvidence:v.optional(v.string()),gasTestEvidence:v.optional(v.string()),suspensionReason:v.optional(v.string()),closureNotes:v.optional(v.string())},
   returns:v.any(),
   handler:async(ctx,args)=>{
     const access=await requireScope(ctx,{organizationId:args.organizationId,regionId:args.regionId,branchId:args.branchId,siteId:args.siteId,unitId:args.unitId});if(!access.ok)return{ok:false,code:access.code}
@@ -132,11 +135,13 @@ export const updateStateScoped=mutation({
     if(args.lotoApplied&&!permit.lotoApplied&&permit.status!=="ISSUED")return{ok:false,code:"LOTO_STAGE"}
     if(args.gasTestPassed&&!permit.gasTestPassed&&permit.status!=="ISSUED")return{ok:false,code:"GAS_TEST_STAGE"}
     if(args.lotoReleased&&!permit.lotoReleased&&permit.status!=="RESUMED")return{ok:false,code:"LOTO_RELEASE_STAGE"}
+    if(args.tagRemovalVerified&&!permit.tagRemovalVerified&&args.status!=="RESUMED")return{ok:false,code:"TAG_REMOVAL_STAGE"}
     if(args.lotoApplied&&!permit.lotoApplied&&!args.lotoEvidence?.trim())return{ok:false,code:"LOTO_EVIDENCE_REQUIRED"}
     if(args.gasTestPassed&&!permit.gasTestPassed&&!args.gasTestEvidence?.trim())return{ok:false,code:"GAS_TEST_EVIDENCE_REQUIRED"}
     if(args.status==="SUSPENDED"&&!args.suspensionReason?.trim())return{ok:false,code:"SUSPENSION_REASON_REQUIRED"}
+    if(args.status==="CLOSED"&&!args.tagRemovalVerified)return{ok:false,code:"TAG_REMOVAL_VERIFICATION_REQUIRED"}
     if(args.status==="CLOSED"&&!args.closureNotes?.trim())return{ok:false,code:"CLOSURE_NOTES_REQUIRED"}
-    await ctx.db.patch(args.id,{status:args.status,authorizationApproved:args.authorizationApproved,lotoApplied:args.lotoApplied,lotoReleased:args.lotoReleased,gasTestPassed:args.gasTestPassed,lotoEvidence:args.lotoEvidence??permit.lotoEvidence,gasTestEvidence:args.gasTestEvidence??permit.gasTestEvidence,suspensionReason:args.suspensionReason??permit.suspensionReason,closureNotes:args.closureNotes??permit.closureNotes,updatedAt:Date.now()})
+    await ctx.db.patch(args.id,{status:args.status,authorizationApproved:args.authorizationApproved,lotoApplied:args.lotoApplied,lotoReleased:args.lotoReleased,tagRemovalVerified:args.tagRemovalVerified,riskReviewed:args.riskReviewed,eligibilityVerified:args.eligibilityVerified,gasTestPassed:args.gasTestPassed,lotoEvidence:args.lotoEvidence??permit.lotoEvidence,gasTestEvidence:args.gasTestEvidence??permit.gasTestEvidence,suspensionReason:args.suspensionReason??permit.suspensionReason,closureNotes:args.closureNotes??permit.closureNotes,updatedAt:Date.now()})
     return{ok:true}
   }
 })
