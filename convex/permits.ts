@@ -31,11 +31,14 @@ function guardTransition(status:Status,next:Status,p:any){
   if(next==="PENDING_APPROVAL"&&!p.riskReviewed)return"RISK_REVIEW_REQUIRED"
   if(next==="ISSUED"&&!p.authorizationApproved&&!p.eligibilityVerified)return"AUTHORIZATION_REQUIRED"
   if(next==="ACTIVE"){
+    if(p.startAt){const start=Date.parse(p.startAt);if(Number.isFinite(start)&&Date.now()>start+2*60*60*1000)return"START_WINDOW_EXPIRED"}
+    if(p.endAt){const end=Date.parse(p.endAt);if(Number.isFinite(end)&&Date.now()>end)return"PERMIT_TIME_EXPIRED"}
     if(!p.authorizationApproved)return"AUTHORIZATION_REQUIRED"
     if(p.requiresLoto&&!p.lotoApplied)return"LOTO_REQUIRED"
     if(p.requiredGasTest&&!p.gasTestPassed)return"GAS_TEST_REQUIRED"
   }
   if(next==="CLOSED"&&p.requiresLoto&&!p.lotoReleased)return"LOTO_RELEASE_REQUIRED"
+  if(next==="RESUMED"&&p.endAt){const end=Date.parse(p.endAt);if(Number.isFinite(end)&&Date.now()>end)return"PERMIT_TIME_EXPIRED"}
   if(next==="CLOSED"&&!p.tagRemovalVerified)return"TAG_REMOVAL_VERIFICATION_REQUIRED"
   return null
 }
