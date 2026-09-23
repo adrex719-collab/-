@@ -23,7 +23,7 @@ export default defineSchema({
     relationshipType: v.optional(v.union(v.literal("PRIMARY"), v.literal("SUPPLEMENTAL"), v.literal("SPECIALIZED"))),
     parentPermitId: v.optional(v.id("permits")),
     rootPermitId: v.optional(v.id("permits")),
-    specializedProfile: v.optional(v.string()),
+    specializedProfile: v.optional(v.string()), electricalIsolation: v.optional(v.boolean()), lockOffOrLockout: v.optional(v.boolean()), authorizedElectricalPersonnel: v.optional(v.boolean()), radiographyTeamSize: v.optional(v.number()), advanceSubmissionAt: v.optional(v.string()), hseApproval: v.optional(v.boolean()), technicalInspectionApproval: v.optional(v.boolean()), controlledAreaBoundary: v.optional(v.boolean()), radiationWarningSignage: v.optional(v.boolean()), radiationMonitoring: v.optional(v.boolean()), radiographyEquipmentId: v.optional(v.string()), dosimetry: v.optional(v.boolean()),
     ruleSetId: v.optional(v.string()),
     ruleSetVersion: v.optional(v.string()),
     effectiveProcedureId: v.optional(v.string()),
