@@ -5,16 +5,16 @@ import { getAuthUserId } from "@convex-dev/auth/server"
 const roleMatrix: Record<string,string[]> = {
  CENTRAL_HSE:["ptw.read","ptw.create","ptw.risk_review","ptw.approve","ptw.issue","ptw.activate","ptw.suspend_resume","ptw.close","ptw.cancel"],
  BRANCH_MANAGER:["ptw.read","ptw.create","ptw.approve","ptw.issue","ptw.activate","ptw.suspend_resume","ptw.close","ptw.cancel"],
- HSE_SUPERVISOR:["ptw.read","ptw.create","ptw.approve","ptw.issue","ptw.activate","ptw.suspend_resume","ptw.close"],
+ HSE_SUPERVISOR:["ptw.read","ptw.create","ptw.risk_review","ptw.approve","ptw.issue","ptw.activate","ptw.suspend_resume","ptw.close"],
  HSE_STAFF:["ptw.read","ptw.create"],
  OPERATIONS_STAFF:["ptw.read","ptw.create"],
  CONTRACTOR:["ptw.read","ptw.create"],
 }
 const transitions: Record<string,string[]> = {
  HSE_STAFF:["RISK_REVIEW","PENDING_APPROVAL"], OPERATIONS_STAFF:["RISK_REVIEW","PENDING_APPROVAL"], CONTRACTOR:["RISK_REVIEW","PENDING_APPROVAL"],
- HSE_SUPERVISOR:["PENDING_APPROVAL","ISSUED","ACTIVE","SUSPENDED","RESUMED","CLOSED"],
+ HSE_SUPERVISOR:["RISK_REVIEW","PENDING_APPROVAL","ISSUED","ACTIVE","SUSPENDED","RESUMED","CLOSED"],
  BRANCH_MANAGER:["PENDING_APPROVAL","ISSUED","ACTIVE","SUSPENDED","RESUMED","CLOSED","CANCELLED"],
- CENTRAL_HSE:["PENDING_APPROVAL","ISSUED","ACTIVE","SUSPENDED","RESUMED","CLOSED","CANCELLED","EXPIRED"],
+ CENTRAL_HSE:["RISK_REVIEW","PENDING_APPROVAL","ISSUED","ACTIVE","SUSPENDED","RESUMED","CLOSED","CANCELLED","EXPIRED"],
 }
 
 export const me=query({args:{},returns:v.any(),handler:async(ctx)=>{const userId=await getAuthUserId(ctx);if(!userId)return{authenticated:false};const profile=await ctx.db.query("userProfiles").withIndex("by_user",q=>q.eq("userId",userId)).unique();return{authenticated:true,profile:profile??null}}})
