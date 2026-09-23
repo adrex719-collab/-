@@ -29,7 +29,7 @@ A document marked old, revision 0, or containing historical references is not au
 
 ### Management system / risk
 
-- ISO 45001:2018 + Amendment 1:2024 — OH&S management system, operational control, worker participation, risk, emergency preparedness, incident/improvement and contractor/procurement interfaces.
+- ISO 45001:2018 + Amendment 1:2024 (current published edition; ISO/DIS 45001 is under development for the next revision) — OH&S management system, operational control, worker participation, risk, emergency preparedness, incident/improvement and contractor/procurement interfaces.
 - ISO 31000:2018 — risk-management principles and process. ISO states this edition remains current after 2023 review; a third edition is under development, so the Target must maintain a standards-watch record rather than hard-code an obsolete future reference.
 
 ### Hot work
@@ -38,7 +38,7 @@ A document marked old, revision 0, or containing historical references is not au
 
 ### Electrical safety / hazardous energy
 
-- NFPA 70E:2024 — electrical safety in the workplace.
+- NFPA 70E:2027 — current edition as of this review; the 2024 edition is superseded. The Target must not freeze 2024 as the normative baseline.
 - OSHA 1910.147 — hazardous energy control / lockout-tagout as a recognized benchmark for documented energy-control procedures, authorization, verification, training and group/contractor interfaces.
 - Applicable IEC/Ministry of Petroleum electrical requirements must be mapped separately where they govern the actual installation/work.
 
