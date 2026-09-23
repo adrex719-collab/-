@@ -138,7 +138,7 @@ export const updateStateScoped=mutation({
     if(!can(access.profile,permissionFor(args.status)))return{ok:false,code:"FORBIDDEN"}
     const sameStatus=args.status===permit.status
     const sameStatusControl=sameStatus&&((args.status==="ISSUED"&&((args.lotoApplied&&!permit.lotoApplied)||(args.gasTestPassed&&!permit.gasTestPassed)))||(args.status==="RESUMED"&&((args.lotoReleased&&!permit.lotoReleased)||(args.tagRemovalVerified&&!permit.tagRemovalVerified))))
-    if(sameStatus){if(!sameStatusControl)return{ok:false,code:"INVALID_TRANSITION"};if(args.status==="ISSUED"&&!can(access.profile,"ptw.issue"))return{ok:false,code:"FORBIDDEN"};if(args.status==="RESUMED"&&!can(access.profile,"ptw.activate"))return{ok:false,code:"FORBIDDEN"}}else{
+    if(sameStatus){if(!sameStatusControl)return{ok:false,code:"INVALID_TRANSITION"};if(args.status==="ISSUED"&&!can(access.profile,"ptw.issue"))return{ok:false,code:"FORBIDDEN"};if(args.status==="RESUMED"&&!can(access.profile,"ptw.suspend_resume"))return{ok:false,code:"FORBIDDEN"}}else{
       if(!canTransition(access.profile.role,permit.status,args.status))return{ok:false,code:"ROLE_TRANSITION_DENIED"}
       const guard=guardTransition(permit.status,args.status,permit);if(guard)return{ok:false,code:guard}
     }
