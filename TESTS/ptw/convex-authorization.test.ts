@@ -21,12 +21,12 @@ describe("D08 PTW C03 authorization boundary",()=>{
  })
  it("denies authenticated user outside branch scope",async()=>{
    const t=makeT(); const user=await seedProfile(t,"HSE_STAFF",["BR-B"])
-   const result=await t.withIdentity({subject:user}).query(api.permits.listScoped,{branchId:"BR-A"})
+   const result=await t.withIdentity({subject:user}).query(api.permits.listScoped,{organizationId:"ORG-DEMO",branchId:"BR-A"})
    expect(result).toMatchObject({ok:false,code:"SCOPE_DENIED"})
  })
  it("allows read inside authorized branch scope",async()=>{
    const t=makeT(); const user=await seedProfile(t,"HSE_STAFF",["BR-A"])
-   const result=await t.withIdentity({subject:user}).query(api.permits.listScoped,{branchId:"BR-A"})
+   const result=await t.withIdentity({subject:user}).query(api.permits.listScoped,{organizationId:"ORG-DEMO",branchId:"BR-A"})
    expect(result).toMatchObject({ok:true,permits:[]})
  })
  it("enforces role permission on PTW creation",async()=>{
