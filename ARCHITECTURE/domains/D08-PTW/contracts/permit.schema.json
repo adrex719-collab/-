@@ -1,5 +1,5 @@
 {
-  "schema_version": "PTW-CONTRACT-V1",
+  "schema_version": "PTW-CONTRACT-V2-TAXONOMY",
   "entity": "Permit",
   "status_enum": [
     "DRAFT",
@@ -14,9 +14,30 @@
     "CANCELLED",
     "EXPIRED"
   ],
+  "permit_family": {
+    "PRIMARY": [
+      "COLD_WORK",
+      "HOT_WORK",
+      "CONFINED_SPACE",
+      "EXCAVATION",
+      "VEHICLE_ENTRY",
+      "ROAD_CLOSURE"
+    ],
+    "SUPPLEMENTAL": [
+      "ELECTRICAL_PERMIT"
+    ],
+    "SPECIALIZED": [
+      "RADIOGRAPHY_PERMIT"
+    ]
+  },
+  "relationships": {
+    "PRIMARY": "standalone work authorization within D08",
+    "ELECTRICAL_PERMIT": "must link to a primary permit; may not replace the primary permit",
+    "RADIOGRAPHY_PERMIT": "specialized controlled permit with radiation-specific extension data and approvals"
+  },
   "required": [
     "permit_id",
-    "permit_type",
+    "permit_family",
     "work_location",
     "requester",
     "shift",
@@ -31,7 +52,27 @@
     "start_deadline_hours": 2,
     "excavation": "EXPLICIT_DURATION",
     "as_saluyeh_max_hours": 12,
-    "mahshahr_max_hours": 8
+    "mahshahr_max_hours": 8,
+    "one_permit_per_work": true
+  },
+  "specialized_controls": {
+    "ELECTRICAL_PERMIT": [
+      "electrical_isolation",
+      "lock_off_or_lockout",
+      "authorized_electrical_personnel",
+      "linked_primary_permit"
+    ],
+    "RADIOGRAPHY_PERMIT": [
+      "minimum_two_person_team",
+      "minimum_24_hour_advance_submission",
+      "HSE_approval",
+      "TECHNICAL_INSPECTION_APPROVAL",
+      "controlled_area_boundary",
+      "radiation_warning_signage",
+      "radiation_monitoring",
+      "radiography_equipment_identification",
+      "dosimetry"
+    ]
   },
   "data_classification": "OPERATIONAL"
 }
