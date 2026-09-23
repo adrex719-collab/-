@@ -17,12 +17,12 @@ function scopeMatch(a:any,p:any,args:any){
   return true
 }
 
-export async function evaluatePtwEligibility(ctx:any,args:any){
+export async function evaluatePtwEligibility(ctx:any,args:any): Promise<any>{
   const callerUserId=await getAuthUserId(ctx)
   const userId=args.subjectUserId??callerUserId
-  if(!userId)return{decision:"INELIGIBLE",missingQualifications:[],missingTraining:[],reason:"UNAUTHENTICATED"} as const
+  if(!userId)return{decision:"INELIGIBLE",missingQualifications:[],missingTraining:[],reason:"UNAUTHENTICATED"}
   const profile=await ctx.db.query("userProfiles").withIndex("by_user",q=>q.eq("userId",userId)).unique()
-  if(!profile||!profile.active)return{decision:"INELIGIBLE",subjectUserId:userId,missingQualifications:[],missingTraining:[],reason:"PROFILE_MISSING"} as const
+  if(!profile||!profile.active)return{decision:"INELIGIBLE",subjectUserId:userId,missingQualifications:[],missingTraining:[],reason:"PROFILE_MISSING"}
   const authorizationType=args.authorizationType??"PTW"
   const auths=await ctx.db.query("operationalAuthorizations").withIndex("by_subject_type",q=>q.eq("subjectUserId",userId).eq("authorizationType",authorizationType)).collect()
   const scoped=auths.filter(a=>scopeMatch(a,profile,args))
@@ -30,13 +30,13 @@ export async function evaluatePtwEligibility(ctx:any,args:any){
   if(!auth){
     const revoked=scoped.some(a=>a.status==="REVOKED")
     const expired=scoped.some(a=>a.status==="EXPIRED")
-    return{decision:revoked?"REVOKED":expired?"EXPIRED":"AUTHORIZATION_MISSING",subjectUserId:userId,missingQualifications:args.requiredQualificationRefs??[],missingTraining:args.requiredTrainingRefs??[],reason:"ACTIVE_PTW_AUTHORIZATION_NOT_FOUND"} as const
+    return{decision:revoked?"REVOKED":expired?"EXPIRED":"AUTHORIZATION_MISSING",subjectUserId:userId,missingQualifications:args.requiredQualificationRefs??[],missingTraining:args.requiredTrainingRefs??[],reason:"ACTIVE_PTW_AUTHORIZATION_NOT_FOUND"}
   }
   const missingQualifications=(args.requiredQualificationRefs??[]).filter((x:string)=>!auth.qualificationRefs.includes(x))
   const missingTraining=(args.requiredTrainingRefs??[]).filter((x:string)=>!auth.trainingRefs.includes(x))
-  if(missingQualifications.length)return{decision:"QUALIFICATION_MISSING",subjectUserId:userId,authorizationId:auth._id,authorizationVersion:auth.version,missingQualifications,missingTraining,reason:"QUALIFICATION_REQUIREMENT_NOT_MET"} as const
-  if(missingTraining.length)return{decision:"TRAINING_MISSING",subjectUserId:userId,authorizationId:auth._id,authorizationVersion:auth.version,missingQualifications,missingTraining,reason:"TRAINING_REQUIREMENT_NOT_MET"} as const
-  return{decision:"ELIGIBLE",subjectUserId:userId,authorizationId:auth._id,authorizationVersion:auth.version,missingQualifications:[],missingTraining:[],reason:"ELIGIBLE"} as const
+  if(missingQualifications.length)return{decision:"QUALIFICATION_MISSING",subjectUserId:userId,authorizationId:auth._id,authorizationVersion:auth.version,missingQualifications,missingTraining,reason:"QUALIFICATION_REQUIREMENT_NOT_MET"}
+  if(missingTraining.length)return{decision:"TRAINING_MISSING",subjectUserId:userId,authorizationId:auth._id,authorizationVersion:auth.version,missingQualifications,missingTraining,reason:"TRAINING_REQUIREMENT_NOT_MET"}
+  return{decision:"ELIGIBLE",subjectUserId:userId,authorizationId:auth._id,authorizationVersion:auth.version,missingQualifications:[],missingTraining:[],reason:"ELIGIBLE"}
 }
 
 export const evaluateMyPtwEligibility=query({
