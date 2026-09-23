@@ -16,7 +16,7 @@ async function seedProfile(t:any, role:"CENTRAL_HSE"|"BRANCH_MANAGER"|"HSE_SUPER
 describe("D08 PTW C03 authorization boundary",()=>{
  it("denies unauthenticated branch reads",async()=>{
    const t=makeT()
-   const result=await t.query(api.permits.listScoped,{branchId:"BR-A"})
+   const result=await t.query(api.permits.listScoped,{organizationId:"ORG-DEMO",branchId:"BR-A"})
    expect(result).toMatchObject({ok:false,code:"UNAUTHENTICATED"})
  })
  it("denies authenticated user outside branch scope",async()=>{
