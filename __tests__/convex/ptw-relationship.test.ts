@@ -40,7 +40,7 @@ describe("D08 PTW relationship taxonomy",()=>{
     const p:any=await primary(t,user); expect(p.ok).toBe(true)
     const r:any=await t.withIdentity({subject:user}).mutation(api.permits.createScoped,{
       permitId:"ELEC-002",type:"ELECTRICAL",location:"AREA-A",...S,
-      parentPermitId:p.id,activityDescription:"Electrical isolation",requester:"R-1",responsiblePerson:"RP-1",
+      parentPermitId:p.id,electricalIsolation:true,lockOffOrLockout:true,authorizedElectricalPersonnel:true,activityDescription:"Electrical isolation",requester:"R-1",responsiblePerson:"RP-1",
       requiresLoto:true,requiredGasTest:false,dataClass:"OPERATIONAL"
     })
     expect(r.ok).toBe(true)
@@ -65,7 +65,7 @@ describe("D08 PTW relationship taxonomy",()=>{
     const t=makeT(); const user=await profile(t,"HSE_SUPERVISOR")
     const r:any=await t.withIdentity({subject:user}).mutation(api.permits.createScoped,{
       permitId:"RAD-002",type:"RADIOGRAPHY",location:"AREA-R",...S,
-      specializedProfile:"RADIOGRAPHY",ruleSetId:"D08-PTW",ruleSetVersion:"PTW-TAXONOMY-V1",
+      specializedProfile:"RADIOGRAPHY",radiographyTeamSize:2,advanceSubmissionAt:"2026-09-23T08:00:00Z",hseApproval:true,technicalInspectionApproval:true,controlledAreaBoundary:true,radiationWarningSignage:true,radiationMonitoring:true,radiographyEquipmentId:"RAD-EQ-001",dosimetry:true,ruleSetId:"D08-PTW",ruleSetVersion:"PTW-TAXONOMY-V1",
       effectiveProcedureId:"WI-HS-13",effectiveProcedureRevision:"CONTROLLED-REVIEW",
       activityDescription:"Industrial radiography",requester:"R-1",responsiblePerson:"RP-1",
       requiresLoto:false,requiredGasTest:false,dataClass:"OPERATIONAL"
