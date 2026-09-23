@@ -3,7 +3,7 @@ import { v } from "convex/values"
 import { getAuthUserId } from "@convex-dev/auth/server"
 
 const roleMatrix: Record<string,string[]> = {
- CENTRAL_HSE:["ptw.read","ptw.create","ptw.approve","ptw.issue","ptw.activate","ptw.suspend_resume","ptw.close","ptw.cancel"],
+ CENTRAL_HSE:["ptw.read","ptw.create","ptw.risk_review","ptw.approve","ptw.issue","ptw.activate","ptw.suspend_resume","ptw.close","ptw.cancel"],
  BRANCH_MANAGER:["ptw.read","ptw.create","ptw.approve","ptw.issue","ptw.activate","ptw.suspend_resume","ptw.close","ptw.cancel"],
  HSE_SUPERVISOR:["ptw.read","ptw.create","ptw.approve","ptw.issue","ptw.activate","ptw.suspend_resume","ptw.close"],
  HSE_STAFF:["ptw.read","ptw.create"],
@@ -11,7 +11,7 @@ const roleMatrix: Record<string,string[]> = {
  CONTRACTOR:["ptw.read","ptw.create"],
 }
 const transitions: Record<string,string[]> = {
- HSE_STAFF:["PENDING_APPROVAL"], OPERATIONS_STAFF:["PENDING_APPROVAL"], CONTRACTOR:["PENDING_APPROVAL"],
+ HSE_STAFF:["RISK_REVIEW","PENDING_APPROVAL"], OPERATIONS_STAFF:["RISK_REVIEW","PENDING_APPROVAL"], CONTRACTOR:["RISK_REVIEW","PENDING_APPROVAL"],
  HSE_SUPERVISOR:["PENDING_APPROVAL","ISSUED","ACTIVE","SUSPENDED","RESUMED","CLOSED"],
  BRANCH_MANAGER:["PENDING_APPROVAL","ISSUED","ACTIVE","SUSPENDED","RESUMED","CLOSED","CANCELLED"],
  CENTRAL_HSE:["PENDING_APPROVAL","ISSUED","ACTIVE","SUSPENDED","RESUMED","CLOSED","CANCELLED","EXPIRED"],
