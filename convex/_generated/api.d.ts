@@ -10,6 +10,7 @@
 
 import type * as ResendOTP from "../ResendOTP.js";
 import type * as auth from "../auth.js";
+import type * as authorization from "../authorization.js";
 import type * as authz from "../authz.js";
 import type * as http from "../http.js";
 import type * as macaly from "../macaly.js";
@@ -24,6 +25,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   ResendOTP: typeof ResendOTP;
   auth: typeof auth;
+  authorization: typeof authorization;
   authz: typeof authz;
   http: typeof http;
   macaly: typeof macaly;
