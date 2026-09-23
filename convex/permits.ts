@@ -184,3 +184,26 @@ export const getScoped=query({
     return permit as any
   }
 })
+
+export const recordControl=mutation({
+  args:{id:v.id("permits"),organizationId:v.string(),regionId:v.optional(v.string()),branchId:v.string(),siteId:v.optional(v.string()),unitId:v.optional(v.string()),control:v.union(v.literal("LOTO_APPLIED"),v.literal("GAS_TEST_PASSED"),v.literal("LOTO_RELEASED"),v.literal("TAG_REMOVAL_VERIFIED")),evidence:v.string()},
+  returns:v.any(),
+  handler:async(ctx,args)=>{
+    const access=await requireScope(ctx,{organizationId:args.organizationId,regionId:args.regionId,branchId:args.branchId,siteId:args.siteId,unitId:args.unitId});if(!access.ok)return{ok:false,code:access.code}
+    const permit=await ctx.db.get(args.id);if(!permit||!canSeeRecordScope(access.profile,permit))return{ok:false,code:"SCOPE_DENIED"}
+    const permission=args.control==="LOTO_APPLIED"||args.control==="LOTO_RELEASED"||args.control==="TAG_REMOVAL_VERIFIED"?"ptw.activate":"ptw.issue"
+    if(!can(access.profile,permission))return{ok:false,code:"FORBIDDEN"}
+    if(!args.evidence.trim())return{ok:false,code:"EVIDENCE_REQUIRED"}
+    if(args.control==="LOTO_APPLIED"&&permit.status!=="ISSUED")return{ok:false,code:"LOTO_STAGE"}
+    if(args.control==="GAS_TEST_PASSED"&&permit.status!=="ISSUED")return{ok:false,code:"GAS_TEST_STAGE"}
+    if(args.control==="LOTO_RELEASED"&&permit.status!=="RESUMED")return{ok:false,code:"LOTO_RELEASE_STAGE"}
+    if(args.control==="TAG_REMOVAL_VERIFIED"&&!["RESUMED","CLOSED"].includes(permit.status))return{ok:false,code:"TAG_REMOVAL_STAGE"}
+    const patch:any={updatedAt:Date.now()}
+    if(args.control==="LOTO_APPLIED"){patch.lotoApplied=true;patch.lotoEvidence=args.evidence}
+    if(args.control==="GAS_TEST_PASSED"){patch.gasTestPassed=true;patch.gasTestEvidence=args.evidence}
+    if(args.control==="LOTO_RELEASED"){patch.lotoReleased=true;patch.lotoEvidence=args.evidence}
+    if(args.control==="TAG_REMOVAL_VERIFIED"){patch.tagRemovalVerified=true;patch.closureNotes=args.evidence}
+    await ctx.db.patch(args.id,patch)
+    return{ok:true}
+  }
+})
