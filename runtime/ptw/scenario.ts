@@ -1,0 +1,6 @@
+import { Permit } from "./domain";
+import { canActivate,canClose,canReleaseLoto,canRemoveTags,startDeadlinePassed } from "./engine";
+export function runScenario():string[]{
+ const p:Permit={id:"SEED-HOT-001",type:"HOT_WORK",permitFamily:"PRIMARY",location:"TEST-AREA",branchId:"BR-A",issuedAt:"2026-09-22T09:00:00Z",status:"ISSUED",requiresLoto:true,lotoApplied:true,lotoReleased:false,tagRemovalVerified:false,requiredGasTest:true,gasTestPassed:true,authorizationApproved:true,riskReviewed:true,eligibilityVerified:true};
+ const results:string[]=[]; results.push(canActivate(p)?"PASS: activation prerequisites":"FAIL: activation prerequisites"); results.push(startDeadlinePassed(p,new Date("2026-09-22T12:00:00Z"))?"PASS: 2h reissue guard":"FAIL: 2h reissue guard"); p.status="ACTIVE"; results.push(canReleaseLoto(p)?"PASS: LOTO release":"FAIL: LOTO release"); p.status="RESUMED";p.lotoReleased=true;results.push(!canRemoveTags(p)?"PASS: tag removal verification required":"FAIL: tag removal guard");p.tagRemovalVerified=true;results.push(canClose(p)?"PASS: close after tag removal":"FAIL: close guard");return results;
+}
