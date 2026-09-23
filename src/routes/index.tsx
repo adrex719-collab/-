@@ -10,8 +10,8 @@ import { AuthGate } from '@/components/auth-gate'
 export const Route=createFileRoute('/')({component:()=> <AuthGate><App/></AuthGate>})
 const ORG_ID='ORG-DEMO',REGION_ID='REG-DEMO',BRANCH_ID='BR-A',SITE_ID='SITE-DEMO',UNIT_ID='UNIT-DEMO'
 type PermitType='COLD_WORK'|'HOT_WORK'|'CONFINED_SPACE'|'EXCAVATION'|'ELECTRICAL'|'VEHICLE_ENTRY'|'ROAD_CLOSURE'|'RADIOGRAPHY'
-type Tab='داشبورد'|'مجوزها'|'ثبت مجوز جدید'|'پیگیری'|'گزارش مجوزها'
-const tabs:Tab[]=['داشبورد','مجوزها','ثبت مجوز جدید','پیگیری','گزارش مجوزها']
+type Tab='داشبورد PTW'|'صف کار'|'مجوزها'|'ثبت مجوز جدید'|'گزارش‌ها'|'داشبورد مدیریتی'
+const tabs:Tab[]=['داشبورد PTW','صف کار','مجوزها','ثبت مجوز جدید','گزارش‌ها','داشبورد مدیریتی']
 const typeFa:Record<PermitType,string>={COLD_WORK:'کار سرد',HOT_WORK:'کار گرم',CONFINED_SPACE:'ورود به فضای بسته',EXCAVATION:'حفاری',ELECTRICAL:'کار برقی',VEHICLE_ENTRY:'ورود خودرو',ROAD_CLOSURE:'مسدودی مسیر',RADIOGRAPHY:'رادیوگرافی'}
 const statusFa:Record<string,string>={REQUESTED:'درخواست شده',RISK_REVIEW:'در بررسی ریسک و صلاحیت',PENDING_APPROVAL:'در انتظار تأیید',ISSUED:'صادر شده',ACTIVE:'فعال',SUSPENDED:'معلق',RESUMED:'ازسرگرفته شده',CLOSED:'بسته شده',CANCELLED:'لغو شده',EXPIRED:'منقضی شده'}
 
@@ -22,7 +22,7 @@ function App(){
  const {signOut}=useAuthActions();const authState=useConvexQuery(api.authz.me,{})
  const result=useQuery(api.permits.listScoped,{organizationId:ORG_ID,regionId:REGION_ID,branchId:BRANCH_ID,siteId:SITE_ID,unitId:UNIT_ID,limit:100})
  const createPermit=useMutation(api.permits.createScoped);const updateState=useMutation(api.permits.updateStateScoped);const ensureTestProfile=useMutation(api.authz.ensureTestProfile)
- const [tab,setTab]=useState<Tab>('مجوزها'),[busy,setBusy]=useState(false),[notice,setNotice]=useState(''),[step,setStep]=useState(1),[form,setForm]=useState<Form>(emptyForm),[selectedPermitId,setSelectedPermitId]=useState<Id<'permits'>|null>(null)
+ const [tab,setTab]=useState<Tab>('داشبورد PTW'),[busy,setBusy]=useState(false),[notice,setNotice]=useState(''),[step,setStep]=useState(1),[form,setForm]=useState<Form>(emptyForm),[selectedPermitId,setSelectedPermitId]=useState<Id<'permits'>|null>(null)
  useEffect(()=>{void ensureTestProfile()},[ensureTestProfile])
  const permits=result?.ok?result.permits:[],primaryPermits=permits.filter(p=>p.permitFamily==='PRIMARY'||(!p.permitFamily&&!['ELECTRICAL','RADIOGRAPHY'].includes(p.type))),operational=permits.filter(p=>p.dataClass==='OPERATIONAL')
  const active=operational.filter(p=>p.status==='ACTIVE').length,pending=operational.filter(p=>p.status==='REQUESTED'||p.status==='PENDING_APPROVAL').length
@@ -66,6 +66,8 @@ function App(){
 }
 
 function split(s:string){return s.split(/[,،\\n]/).map(x=>x.trim()).filter(Boolean)}
+function ManagementDashboard({permits}:{permits:any[]}){const active=permits.filter(p=>p.status==='ACTIVE').length;const suspended=permits.filter(p=>p.status==='SUSPENDED').length;const closed=permits.filter(p=>p.status==='CLOSED').length;return <div className="space-y-5"><div className="rounded-2xl border bg-white p-6 shadow-sm"><h2 className="text-xl font-bold">داشبورد مدیریتی PTW</h2><p className="mt-2 text-sm text-slate-500">نمای مدیریتی بر مبنای داده عملیاتی مجوزها.</p></div><div className="grid gap-4 sm:grid-cols-3">{[['فعال',active],['معلق',suspended],['مختومه',closed]].map(([x,n])=><div key={String(x)} className="rounded-2xl border bg-white p-5 shadow-sm"><div className="text-sm text-slate-500">{x}</div><div className="mt-2 text-3xl font-bold">{n}</div></div>)}</div></div>}
+
 function Dashboard({active,pending,total,onNew}:{active:number,pending:number,total:number,onNew:()=>void}){return <><div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{[['مجوزهای فعال',active],['در انتظار اقدام',pending],['کل مجوزهای عملیاتی',total],['ثبت مجوز جدید','+']].map(([t,v],i)=><button key={String(t)} onClick={i===3?onNew:undefined} className="rounded-2xl border bg-white p-5 text-right shadow-sm"><div className="text-xs text-slate-500">{t}</div><div className="mt-3 text-2xl font-bold">{v}</div></button>)}</div><div className="rounded-2xl border bg-white p-6 shadow-sm"><h2 className="text-xl font-bold">چرخه عملیاتی PTW</h2><p className="mt-2 text-sm leading-7 text-slate-600">ثبت → بررسی → تأیید و صدور → LOTO / آزمون گاز → فعال‌سازی → تعلیق/ادامه → اختتام.</p></div></>}
 
 function PermitForm({form,setField,step,setStep,busy,permits,onSubmit}:{form:Form,setField:(k:keyof Form,v:string|boolean)=>void,step:number,setStep:(n:number)=>void,busy:boolean,permits:any[],onSubmit:()=>void}){
