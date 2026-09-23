@@ -2,6 +2,7 @@ import { mutation, query } from "./_generated/server"
 import { v } from "convex/values"
 import { getAuthUserId } from "@convex-dev/auth/server"
 import { requireScope, can, canTransition, canSeeRecordScope } from "./authz"
+import { evaluatePtwEligibility } from "./authorization"
 
 const permitType=v.union(v.literal("COLD_WORK"),v.literal("HOT_WORK"),v.literal("CONFINED_SPACE"),v.literal("EXCAVATION"),v.literal("ELECTRICAL"),v.literal("VEHICLE_ENTRY"),v.literal("ROAD_CLOSURE"),v.literal("RADIOGRAPHY"))
 const permitStatus=v.union(v.literal("REQUESTED"),v.literal("RISK_REVIEW"),v.literal("PENDING_APPROVAL"),v.literal("ISSUED"),v.literal("ACTIVE"),v.literal("SUSPENDED"),v.literal("RESUMED"),v.literal("CLOSED"),v.literal("CANCELLED"),v.literal("EXPIRED"))
@@ -16,19 +17,19 @@ const permitDoc=v.object({
   parentPermitId:v.optional(v.id("permits")),rootPermitId:v.optional(v.id("permits")),
   specializedProfile:v.optional(v.string()),electricalIsolation:v.optional(v.boolean()),lockOffOrLockout:v.optional(v.boolean()),authorizedElectricalPersonnel:v.optional(v.boolean()),radiographyTeamSize:v.optional(v.number()),advanceSubmissionAt:v.optional(v.string()),hseApproval:v.optional(v.boolean()),technicalInspectionApproval:v.optional(v.boolean()),controlledAreaBoundary:v.optional(v.boolean()),radiationWarningSignage:v.optional(v.boolean()),radiationMonitoring:v.optional(v.boolean()),radiographyEquipmentId:v.optional(v.string()),dosimetry:v.optional(v.boolean()),ruleSetId:v.optional(v.string()),ruleSetVersion:v.optional(v.string()),
   effectiveProcedureId:v.optional(v.string()),effectiveProcedureRevision:v.optional(v.string()),
-  location:v.string(),activityDescription:v.optional(v.string()),requester:v.optional(v.string()),responsiblePerson:v.optional(v.string()),contractor:v.optional(v.string()),workDate:v.optional(v.string()),shift:v.optional(v.string()),hazards:v.optional(v.array(v.string())),controls:v.optional(v.array(v.string())),ppe:v.optional(v.array(v.string())),startAt:v.optional(v.string()),endAt:v.optional(v.string()),excavationDurationHours:v.optional(v.number()),
-  status:permitStatus,authorizationApproved:v.boolean(),riskReviewed:v.boolean(),eligibilityVerified:v.boolean(),requiresLoto:v.boolean(),lotoApplied:v.boolean(),lotoReleased:v.boolean(),tagRemovalVerified:v.boolean(),requiredGasTest:v.boolean(),gasTestPassed:v.boolean(),
-  tagRemovalVerified:v.optional(v.boolean()),lotoEvidence:v.optional(v.string()),gasTestEvidence:v.optional(v.string()),suspensionReason:v.optional(v.string()),closureNotes:v.optional(v.string()),
+  location:v.string(),activityDescription:v.optional(v.string()),requester:v.optional(v.string()),requesterUserId:v.optional(v.id("users")),responsiblePerson:v.optional(v.string()),contractor:v.optional(v.string()),workDate:v.optional(v.string()),shift:v.optional(v.string()),hazards:v.optional(v.array(v.string())),controls:v.optional(v.array(v.string())),ppe:v.optional(v.array(v.string())),startAt:v.optional(v.string()),endAt:v.optional(v.string()),excavationDurationHours:v.optional(v.number()),
+  status:permitStatus,authorizationApproved:v.boolean(),riskReviewed:v.boolean(),eligibilityVerified:v.boolean(),eligibilityDecision:v.optional(v.union(v.literal("ELIGIBLE"),v.literal("INELIGIBLE"),v.literal("EXPIRED"),v.literal("REVOKED"),v.literal("OUT_OF_SCOPE"),v.literal("QUALIFICATION_MISSING"),v.literal("TRAINING_MISSING"),v.literal("AUTHORIZATION_MISSING"))),eligibilityAuthorizationId:v.optional(v.id("operationalAuthorizations")),eligibilityAuthorizationVersion:v.optional(v.string()),eligibilityEvaluatedAt:v.optional(v.number()),requiresLoto:v.boolean(),lotoApplied:v.boolean(),lotoReleased:v.boolean(),tagRemovalVerified:v.boolean(),requiredGasTest:v.boolean(),gasTestPassed:v.boolean(),
+  lotoEvidence:v.optional(v.string()),gasTestEvidence:v.optional(v.string()),suspensionReason:v.optional(v.string()),closureNotes:v.optional(v.string()),
   dataClass:v.union(v.literal("TEST/SEED"),v.literal("OPERATIONAL")),createdAt:v.number(),updatedAt:v.number()
 })
-const legacyPermitDoc=v.object({_id:v.id("permits"),_creationTime:v.number(),permitId:v.string(),organizationId:v.optional(v.string()),regionId:v.optional(v.string()),branchId:v.optional(v.string()),siteId:v.optional(v.string()),unitId:v.optional(v.string()),type:v.union(v.literal("COLD_WORK"),v.literal("HOT_WORK"),v.literal("CONFINED_SPACE"),v.literal("EXCAVATION")),location:v.string(),status:permitStatus,authorizationApproved:v.boolean(),requiresLoto:v.boolean(),lotoApplied:v.boolean(),lotoReleased:v.boolean(),requiredGasTest:v.boolean(),gasTestPassed:v.boolean(),dataClass:v.union(v.literal("TEST/SEED"),v.literal("OPERATIONAL")),createdAt:v.number(),updatedAt:v.number()})
+const legacyPermitDoc=v.object({_id:v.id("permits"),_creationTime:v.number(),permitId:v.string(),organizationId:v.optional(v.string()),regionId:v.optional(v.string()),branchId:v.optional(v.string()),siteId:v.optional(v.string()),unitId:v.optional(v.string()),type:v.union(v.literal("COLD_WORK"),v.literal("HOT_WORK"),v.literal("CONFINED_SPACE"),v.literal("EXCAVATION"),v.literal("ELECTRICAL"),v.literal("VEHICLE_ENTRY"),v.literal("ROAD_CLOSURE"),v.literal("RADIOGRAPHY")),location:v.string(),status:permitStatus,authorizationApproved:v.boolean(),requiresLoto:v.boolean(),lotoApplied:v.boolean(),lotoReleased:v.boolean(),requiredGasTest:v.boolean(),gasTestPassed:v.boolean(),dataClass:v.union(v.literal("TEST/SEED"),v.literal("OPERATIONAL")),createdAt:v.number(),updatedAt:v.number()})
 const accessResult=v.union(v.object({ok:v.literal(true),permits:v.array(permitDoc)}),v.object({ok:v.literal(false),code:v.string(),permits:v.array(permitDoc)}))
 
 function guardTransition(status:Status,next:Status,p:any){
   const allowed:Record<Status,Status[]>={REQUESTED:["RISK_REVIEW","CANCELLED"],RISK_REVIEW:["PENDING_APPROVAL","CANCELLED"],PENDING_APPROVAL:["ISSUED","CANCELLED"],ISSUED:["ACTIVE","CANCELLED","EXPIRED"],ACTIVE:["SUSPENDED"],SUSPENDED:["RESUMED","CANCELLED"],RESUMED:["CLOSED","SUSPENDED"],CLOSED:[],CANCELLED:[],EXPIRED:[]}
   if(!allowed[status].includes(next))return"INVALID_TRANSITION"
   if(next==="PENDING_APPROVAL"&&!p.riskReviewed)return"RISK_REVIEW_REQUIRED"
-  if(next==="ISSUED"&&!p.authorizationApproved)return"AUTHORIZATION_REQUIRED"
+  if(next==="ISSUED"&&!p.authorizationApproved&&!p.eligibilityVerified)return"AUTHORIZATION_REQUIRED"
   if(next==="ACTIVE"){
     if(!p.authorizationApproved)return"AUTHORIZATION_REQUIRED"
     if(p.requiresLoto&&!p.lotoApplied)return"LOTO_REQUIRED"
@@ -59,7 +60,7 @@ export const list=query({
     const profile=await ctx.db.query("userProfiles").withIndex("by_user",q=>q.eq("userId",userId)).unique();if(!profile||!profile.active)return[]
     const rows=await ctx.db.query("permits").order("desc").take(Math.min(args.limit??50,100))
     const visible=profile.role==="CENTRAL_HSE"?rows:rows.filter(p=>!!p.branchId&&profile.branchIds.includes(p.branchId!))
-    return visible.filter(p=>["COLD_WORK","HOT_WORK","CONFINED_SPACE","EXCAVATION"].includes(p.type)) as any
+    return visible as any
   }
 })
 
@@ -88,7 +89,7 @@ export const createScoped=mutation({
   args:{
     permitId:v.string(),type:permitType,location:v.string(),organizationId:v.string(),regionId:v.optional(v.string()),branchId:v.string(),siteId:v.optional(v.string()),unitId:v.optional(v.string()),
     parentPermitId:v.optional(v.id("permits")),specializedProfile:v.optional(v.string()),electricalIsolation:v.optional(v.boolean()),lockOffOrLockout:v.optional(v.boolean()),authorizedElectricalPersonnel:v.optional(v.boolean()),radiographyTeamSize:v.optional(v.number()),advanceSubmissionAt:v.optional(v.string()),hseApproval:v.optional(v.boolean()),technicalInspectionApproval:v.optional(v.boolean()),controlledAreaBoundary:v.optional(v.boolean()),radiationWarningSignage:v.optional(v.boolean()),radiationMonitoring:v.optional(v.boolean()),radiographyEquipmentId:v.optional(v.string()),dosimetry:v.optional(v.boolean()),ruleSetId:v.optional(v.string()),ruleSetVersion:v.optional(v.string()),effectiveProcedureId:v.optional(v.string()),effectiveProcedureRevision:v.optional(v.string()),
-    activityDescription:v.optional(v.string()),requester:v.optional(v.string()),responsiblePerson:v.optional(v.string()),contractor:v.optional(v.string()),workDate:v.optional(v.string()),shift:v.optional(v.string()),hazards:v.optional(v.array(v.string())),controls:v.optional(v.array(v.string())),ppe:v.optional(v.array(v.string())),startAt:v.optional(v.string()),endAt:v.optional(v.string()),excavationDurationHours:v.optional(v.number()),
+    activityDescription:v.optional(v.string()),requester:v.optional(v.string()),requesterUserId:v.optional(v.id("users")),responsiblePerson:v.optional(v.string()),contractor:v.optional(v.string()),workDate:v.optional(v.string()),shift:v.optional(v.string()),hazards:v.optional(v.array(v.string())),controls:v.optional(v.array(v.string())),ppe:v.optional(v.array(v.string())),startAt:v.optional(v.string()),endAt:v.optional(v.string()),excavationDurationHours:v.optional(v.number()),
     requiresLoto:v.boolean(),requiredGasTest:v.boolean(),dataClass:v.union(v.literal("TEST/SEED"),v.literal("OPERATIONAL"))
   },
   returns:v.any(),
@@ -118,13 +119,14 @@ export const createScoped=mutation({
     const duplicate=await ctx.db.query("permits").withIndex("by_permit_id",q=>q.eq("permitId",args.permitId)).first()
     if(duplicate)return{ok:false,code:"DUPLICATE_PERMIT"}
     const now=Date.now()
-    const id=await ctx.db.insert("permits",{...args,permitFamily:family,relationshipType:family,parentPermitId:args.parentPermitId,rootPermitId,specializedProfile:args.specializedProfile,electricalIsolation:args.electricalIsolation,lockOffOrLockout:args.lockOffOrLockout,authorizedElectricalPersonnel:args.authorizedElectricalPersonnel,radiographyTeamSize:args.radiographyTeamSize,advanceSubmissionAt:args.advanceSubmissionAt,hseApproval:args.hseApproval,technicalInspectionApproval:args.technicalInspectionApproval,controlledAreaBoundary:args.controlledAreaBoundary,radiationWarningSignage:args.radiationWarningSignage,radiationMonitoring:args.radiationMonitoring,radiographyEquipmentId:args.radiographyEquipmentId,dosimetry:args.dosimetry,ruleSetId:args.ruleSetId,ruleSetVersion:args.ruleSetVersion,effectiveProcedureId:args.effectiveProcedureId,effectiveProcedureRevision:args.effectiveProcedureRevision,status:"REQUESTED",authorizationApproved:false,lotoApplied:false,lotoReleased:false,tagRemovalVerified:false,gasTestPassed:false,riskReviewed:false,eligibilityVerified:false,createdAt:now,updatedAt:now})
+    const requesterUserId=args.requesterUserId??access.userId
+    const id=await ctx.db.insert("permits",{...args,requesterUserId,permitFamily:family,relationshipType:family,parentPermitId:args.parentPermitId,rootPermitId,specializedProfile:args.specializedProfile,electricalIsolation:args.electricalIsolation,lockOffOrLockout:args.lockOffOrLockout,authorizedElectricalPersonnel:args.authorizedElectricalPersonnel,radiographyTeamSize:args.radiographyTeamSize,advanceSubmissionAt:args.advanceSubmissionAt,hseApproval:args.hseApproval,technicalInspectionApproval:args.technicalInspectionApproval,controlledAreaBoundary:args.controlledAreaBoundary,radiationWarningSignage:args.radiationWarningSignage,radiationMonitoring:args.radiationMonitoring,radiographyEquipmentId:args.radiographyEquipmentId,dosimetry:args.dosimetry,ruleSetId:args.ruleSetId,ruleSetVersion:args.ruleSetVersion,effectiveProcedureId:args.effectiveProcedureId,effectiveProcedureRevision:args.effectiveProcedureRevision,status:"REQUESTED",authorizationApproved:false,lotoApplied:false,lotoReleased:false,tagRemovalVerified:false,gasTestPassed:false,riskReviewed:false,eligibilityVerified:false,createdAt:now,updatedAt:now})
     return{ok:true,id}
   }
 })
 
 export const updateStateScoped=mutation({
-  args:{id:v.id("permits"),organizationId:v.string(),regionId:v.optional(v.string()),branchId:v.string(),siteId:v.optional(v.string()),unitId:v.optional(v.string()),status:permitStatus,authorizationApproved:v.boolean(),lotoApplied:v.boolean(),lotoReleased:v.boolean(),gasTestPassed:v.boolean(),tagRemovalVerified:v.boolean(),riskReviewed:v.boolean(),eligibilityVerified:v.boolean(),lotoEvidence:v.optional(v.string()),gasTestEvidence:v.optional(v.string()),suspensionReason:v.optional(v.string()),closureNotes:v.optional(v.string())},
+  args:{id:v.id("permits"),organizationId:v.string(),regionId:v.optional(v.string()),branchId:v.string(),siteId:v.optional(v.string()),unitId:v.optional(v.string()),status:permitStatus,authorizationApproved:v.boolean(),lotoApplied:v.boolean(),lotoReleased:v.boolean(),gasTestPassed:v.boolean(),tagRemovalVerified:v.boolean(),riskReviewed:v.boolean(),lotoEvidence:v.optional(v.string()),gasTestEvidence:v.optional(v.string()),suspensionReason:v.optional(v.string()),closureNotes:v.optional(v.string())},
   returns:v.any(),
   handler:async(ctx,args)=>{
     const access=await requireScope(ctx,{organizationId:args.organizationId,regionId:args.regionId,branchId:args.branchId,siteId:args.siteId,unitId:args.unitId});if(!access.ok)return{ok:false,code:access.code}
@@ -133,6 +135,29 @@ export const updateStateScoped=mutation({
     if(!can(access.profile,permissionFor(args.status)))return{ok:false,code:"FORBIDDEN"}
     if(!canTransition(access.profile.role,permit.status,args.status))return{ok:false,code:"ROLE_TRANSITION_DENIED"}
     const guard=guardTransition(permit.status,args.status,permit);if(guard)return{ok:false,code:guard}
+    let eligibilityVerified=permit.eligibilityVerified
+    let eligibilityDecision=permit.eligibilityDecision
+    let eligibilityAuthorizationId=permit.eligibilityAuthorizationId
+    let eligibilityAuthorizationVersion=permit.eligibilityAuthorizationVersion
+    let eligibilityEvaluatedAt=permit.eligibilityEvaluatedAt
+    let authorizationApproved=permit.authorizationApproved
+    if(args.status==="PENDING_APPROVAL"){
+      const evaluation=await evaluatePtwEligibility(ctx,{subjectUserId:permit.requesterUserId,authorizationType:"PTW",permitType:permit.type,organizationId:permit.organizationId??args.organizationId,regionId:permit.regionId??args.regionId,branchId:permit.branchId??args.branchId,siteId:permit.siteId??args.siteId,unitId:permit.unitId??args.unitId})
+      eligibilityDecision=evaluation.decision
+      eligibilityAuthorizationId=evaluation.authorizationId
+      eligibilityAuthorizationVersion=evaluation.authorizationVersion
+      eligibilityEvaluatedAt=Date.now()
+      eligibilityVerified=evaluation.decision==="ELIGIBLE"
+      if(!eligibilityVerified)return{ok:false,code:evaluation.reason,decision:evaluation.decision}
+    }
+    if(args.status==="ISSUED"){
+      const approverId=await getAuthUserId(ctx)
+      if(approverId && permit.requesterUserId===approverId)return{ok:false,code:"SOD_REQUESTER_CANNOT_APPROVE"}
+      const evaluation=await evaluatePtwEligibility(ctx,{authorizationType:"PTW_APPROVER",permitType:permit.type,organizationId:permit.organizationId??args.organizationId,regionId:permit.regionId??args.regionId,branchId:permit.branchId??args.branchId,siteId:permit.siteId??args.siteId,unitId:permit.unitId??args.unitId})
+      if(evaluation.decision!=="ELIGIBLE")return{ok:false,code:"APPROVER_AUTHORIZATION_REQUIRED",decision:evaluation.decision,reason:evaluation.reason}
+      if(!permit.eligibilityVerified)return{ok:false,code:"REQUESTER_ELIGIBILITY_REQUIRED"}
+      authorizationApproved=true
+    }
     if(args.authorizationApproved&&!permit.authorizationApproved&&permit.status!=="PENDING_APPROVAL")return{ok:false,code:"AUTHORIZATION_STAGE"}
     if(args.lotoApplied&&!permit.lotoApplied&&permit.status!=="ISSUED")return{ok:false,code:"LOTO_STAGE"}
     if(args.gasTestPassed&&!permit.gasTestPassed&&permit.status!=="ISSUED")return{ok:false,code:"GAS_TEST_STAGE"}
@@ -143,7 +168,7 @@ export const updateStateScoped=mutation({
     if(args.status==="SUSPENDED"&&!args.suspensionReason?.trim())return{ok:false,code:"SUSPENSION_REASON_REQUIRED"}
     if(args.status==="CLOSED"&&!args.tagRemovalVerified)return{ok:false,code:"TAG_REMOVAL_VERIFICATION_REQUIRED"}
     if(args.status==="CLOSED"&&!args.closureNotes?.trim())return{ok:false,code:"CLOSURE_NOTES_REQUIRED"}
-    await ctx.db.patch(args.id,{status:args.status,authorizationApproved:args.authorizationApproved,lotoApplied:args.lotoApplied,lotoReleased:args.lotoReleased,tagRemovalVerified:args.tagRemovalVerified,riskReviewed:args.riskReviewed,eligibilityVerified:args.eligibilityVerified,gasTestPassed:args.gasTestPassed,lotoEvidence:args.lotoEvidence??permit.lotoEvidence,gasTestEvidence:args.gasTestEvidence??permit.gasTestEvidence,suspensionReason:args.suspensionReason??permit.suspensionReason,closureNotes:args.closureNotes??permit.closureNotes,updatedAt:Date.now()})
+    await ctx.db.patch(args.id,{status:args.status,authorizationApproved,lotoApplied:args.lotoApplied,lotoReleased:args.lotoReleased,tagRemovalVerified:args.tagRemovalVerified,riskReviewed:args.riskReviewed,eligibilityVerified,eligibilityDecision,eligibilityAuthorizationId,eligibilityAuthorizationVersion,eligibilityEvaluatedAt,gasTestPassed:args.gasTestPassed,lotoEvidence:args.lotoEvidence??permit.lotoEvidence,gasTestEvidence:args.gasTestEvidence??permit.gasTestEvidence,suspensionReason:args.suspensionReason??permit.suspensionReason,closureNotes:args.closureNotes??permit.closureNotes,updatedAt:Date.now()})
     return{ok:true}
   }
 })
