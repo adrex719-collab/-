@@ -172,3 +172,15 @@ export const updateStateScoped=mutation({
     return{ok:true}
   }
 })
+
+export const getScoped=query({
+  args:{id:v.id("permits"),organizationId:v.string(),regionId:v.optional(v.string()),branchId:v.string(),siteId:v.optional(v.string()),unitId:v.optional(v.string())},
+  returns:v.union(permitDoc,v.null()),
+  handler:async(ctx,args)=>{
+    const access=await requireScope(ctx,{organizationId:args.organizationId,regionId:args.regionId,branchId:args.branchId,siteId:args.siteId,unitId:args.unitId})
+    if(!access.ok||!can(access.profile,"ptw.read"))return null
+    const permit=await ctx.db.get(args.id)
+    if(!permit||!canSeeRecordScope(access.profile,permit))return null
+    return permit as any
+  }
+})
