@@ -26,10 +26,16 @@ export async function evaluatePtwEligibility(ctx:any,args:any): Promise<any>{
   const authorizationType=args.authorizationType??"PTW"
   const auths=await ctx.db.query("operationalAuthorizations").withIndex("by_subject_type",q=>q.eq("subjectUserId",userId).eq("authorizationType",authorizationType)).collect()
   const scoped=auths.filter(a=>scopeMatch(a,profile,args))
-  const auth=scoped.find(a=>a.status==="ACTIVE" && a.permitTypes.includes(args.permitType))
+  const now=Date.now()
+  const auth=scoped.find(a=>{
+    if(a.status!=="ACTIVE" || !a.permitTypes.includes(args.permitType)) return false
+    if(a.validFrom){const from=Date.parse(a.validFrom);if(Number.isFinite(from)&&now<from)return false}
+    if(a.validUntil){const until=Date.parse(a.validUntil);if(Number.isFinite(until)&&now>until)return false}
+    return true
+  })
   if(!auth){
     const revoked=scoped.some(a=>a.status==="REVOKED")
-    const expired=scoped.some(a=>a.status==="EXPIRED")
+    const expired=scoped.some(a=>a.status==="EXPIRED" || (a.status==="ACTIVE" && a.validUntil && Number.isFinite(Date.parse(a.validUntil)) && now>Date.parse(a.validUntil)))
     return{decision:revoked?"REVOKED":expired?"EXPIRED":"AUTHORIZATION_MISSING",subjectUserId:userId,missingQualifications:args.requiredQualificationRefs??[],missingTraining:args.requiredTrainingRefs??[],reason:"ACTIVE_PTW_AUTHORIZATION_NOT_FOUND"}
   }
   const missingQualifications=(args.requiredQualificationRefs??[]).filter((x:string)=>!auth.qualificationRefs.includes(x))
