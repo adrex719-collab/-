@@ -37,9 +37,10 @@ function App(){
  }
  async function advance(p:any,extra:any={}){
   setBusy(true);setNotice('')
-  const base={id:p._id,organizationId:ORG_ID,regionId:REGION_ID,branchId:BRANCH_ID,siteId:SITE_ID,unitId:UNIT_ID,authorizationApproved:p.authorizationApproved,lotoApplied:p.lotoApplied,lotoReleased:p.lotoReleased,gasTestPassed:p.gasTestPassed,...extra}
+  const base={id:p._id,organizationId:ORG_ID,regionId:REGION_ID,branchId:BRANCH_ID,siteId:SITE_ID,unitId:UNIT_ID,authorizationApproved:p.authorizationApproved,lotoApplied:p.lotoApplied,lotoReleased:p.lotoReleased,tagRemovalVerified:p.tagRemovalVerified??false,riskReviewed:p.riskReviewed??false,eligibilityVerified:p.eligibilityVerified??false,gasTestPassed:p.gasTestPassed,...extra}
   try{
-   if(p.status==='REQUESTED')await updateState({...base,status:'PENDING_APPROVAL'})
+   if(p.status==='REQUESTED')await updateState({...base,status:'RISK_REVIEW',riskReviewed:true,eligibilityVerified:true})
+   else if(p.status==='RISK_REVIEW')await updateState({...base,status:'PENDING_APPROVAL'})
    else if(p.status==='PENDING_APPROVAL')await updateState({...base,status:'ISSUED',authorizationApproved:true})
    else if(p.status==='ISSUED'&&p.requiresLoto&&!p.lotoApplied)await updateState({...base,status:'ISSUED',lotoApplied:true})
    else if(p.status==='ISSUED'&&p.requiredGasTest&&!p.gasTestPassed)await updateState({...base,status:'ISSUED',gasTestPassed:true})
@@ -47,7 +48,7 @@ function App(){
    else if(p.status==='ACTIVE')await updateState({...base,status:'SUSPENDED'})
    else if(p.status==='SUSPENDED')await updateState({...base,status:'RESUMED'})
    else if(p.status==='RESUMED'&&p.requiresLoto&&!p.lotoReleased)await updateState({...base,status:'RESUMED',lotoReleased:true})
-   else if(p.status==='RESUMED')await updateState({...base,status:'CLOSED'})
+   else if(p.status==='RESUMED')await updateState({...base,status:'CLOSED',tagRemovalVerified:true})
   }catch(e){setNotice(e instanceof Error?e.message:'عملیات انجام نشد')}finally{setBusy(false)}
  }
  const accessMessage=result?.ok?'Scope شعبه مجاز است':result?'دسترسی: '+result.code:'در حال بررسی دسترسی…'
@@ -81,7 +82,7 @@ function Field({label,children}:{label:string,children:ReactNode}){return <label
 function PermitList({permits,busy,onAdvance}:{permits:any[],busy:boolean,onAdvance:(p:any,extra?:any)=>void}){return <div className="rounded-2xl border bg-white shadow-sm"><div className="border-b p-5"><h2 className="text-xl font-bold">مجوزها</h2><p className="mt-1 text-sm text-slate-500">داده‌های عملیاتی در این نما نمایش داده می‌شوند.</p></div>{permits.length===0?<div className="p-12 text-center text-sm text-slate-500">هنوز مجوز عملیاتی قابل مشاهده‌ای وجود ندارد.</div>:<div className="overflow-x-auto"><div className="min-w-[1000px]"><div className="grid grid-cols-7 gap-3 border-b bg-slate-50 px-5 py-3 text-xs font-semibold text-slate-500"><div>شناسه</div><div>نوع</div><div>محل</div><div>مسئول</div><div>Scope</div><div>وضعیت</div><div>عملیات</div></div>{permits.map(p=><div key={p._id} className="grid grid-cols-7 items-center gap-3 border-b px-5 py-4 text-sm"><div className="font-semibold">{p.permitId}</div><div>{typeFa[p.type as PermitType]}</div><div>{p.location}</div><div>{p.responsiblePerson||'—'}</div><div>{p.branchId}</div><div><span className="rounded-full border px-2.5 py-1 text-xs">{statusFa[p.status]??p.status}</span></div><PermitAction p={p} busy={busy} onAdvance={onAdvance}/></div>)}</div></div>}</div>}
 function PermitAction({p,busy,onAdvance}:{p:any,busy:boolean,onAdvance:(p:any,extra?:any)=>void}){
  const [open,setOpen]=useState(false),[value,setValue]=useState('');
- const next=p.status==='REQUESTED'?'ارسال برای بررسی':p.status==='PENDING_APPROVAL'?'تأیید و صدور':p.status==='ISSUED'&&p.requiresLoto&&!p.lotoApplied?'ثبت LOTO':p.status==='ISSUED'&&p.requiredGasTest&&!p.gasTestPassed?'ثبت آزمون گاز':p.status==='ISSUED'?'فعال‌سازی':p.status==='ACTIVE'?'تعلیق کار':p.status==='SUSPENDED'?'ادامه کار':p.status==='RESUMED'&&p.requiresLoto&&!p.lotoReleased?'آزادسازی LOTO':p.status==='RESUMED'?'اختتام مجوز':'';
+ const next=p.status==='REQUESTED'?'بررسی ریسک و صلاحیت':p.status==='RISK_REVIEW'?'ارسال برای تأیید':p.status==='PENDING_APPROVAL'?'تأیید و صدور':p.status==='ISSUED'&&p.requiresLoto&&!p.lotoApplied?'ثبت LOTO':p.status==='ISSUED'&&p.requiredGasTest&&!p.gasTestPassed?'ثبت آزمون گاز':p.status==='ISSUED'?'فعال‌سازی':p.status==='ACTIVE'?'تعلیق کار':p.status==='SUSPENDED'?'ادامه کار':p.status==='RESUMED'&&p.requiresLoto&&!p.lotoReleased?'آزادسازی LOTO':p.status==='RESUMED'?'اختتام مجوز':'';
  const needsEvidence=['ثبت LOTO','ثبت آزمون گاز','تعلیق کار','اختتام مجوز'].includes(next);
  if(!next)return <span className="text-xs text-slate-400">—</span>;
  if(!open)return <button data-testid={'ptw-action-'+p.permitId} onClick={()=>setOpen(true)} disabled={busy} className="rounded-lg border px-3 py-2 text-xs disabled:opacity-40">{next}</button>;
